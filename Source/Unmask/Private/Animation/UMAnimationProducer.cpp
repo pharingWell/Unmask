@@ -1,20 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Animation/UMAnimationProducer.h"
-
-#include "AnimationUtils.h"
-#include "Animation/AnimationSettings.h"
-#include "Animation/UMSequenceStructs.h"
 #include "AssetRegistry/AssetRegistryModule.h"
-
-#define FPS 60
 
 static int Counter = 0;
 
-
-TObjectPtr<UAnimMontage> UUMAnimationProducer::CreateMontage(
-	const TMap<FName, FUMJointSequence>& JointTracks, USkeletalMesh* AnimatedObject
+/*// From https://forums.unrealengine.com/t/creating-a-uanimsequence-from-scratch-using-addkeytosequence/774856/5?u=sf2979
+UAnimMontage* UUMAnimationProducer::CreateMontage(
+	const TMap<FName, TArray<FUMKeyFrame>>& JointTracks, USkeletalMesh* AnimatedObject
 ){
 	UAnimSequence* AnimSequence = NewObject<UAnimSequence>(
 		Cast<UObject, USkeletalMesh>(AnimatedObject),
@@ -53,52 +46,59 @@ TObjectPtr<UAnimMontage> UUMAnimationProducer::CreateMontage(
 	#endif
 
 	return CreateMontage(JointTracks, AnimSequence);
-}
+}*/
 
-TObjectPtr<UAnimMontage> UUMAnimationProducer::CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks, UAnimSequenceBase* Asset)
+UAnimMontage* UUMAnimationProducer::CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks, USkeletalMesh* AnimatedObject)
 {
 	FMontageBlendSettings BlendInSettings(0.0f);
 	FMontageBlendSettings BlendOutSettings(0.0f);
-	return CreateMontage_WithBlendSettings(JointTracks, Asset, BlendInSettings, BlendOutSettings, 0.0f);
+	return CreateMontage_WithBlendSettings(JointTracks, AnimatedObject, BlendInSettings, BlendOutSettings, 0.0f);
 }
 
-TObjectPtr<UAnimMontage> UUMAnimationProducer::CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks, UAnimSequenceBase* Asset, float BlendInTime, float BlendOutTime, float BlendOutTriggerTime)
+UAnimMontage* UUMAnimationProducer::CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks, USkeletalMesh* AnimatedObject, float BlendInTime, float BlendOutTime, float BlendOutTriggerTime)
 {
 	FMontageBlendSettings BlendInSettings(BlendInTime);
 	FMontageBlendSettings BlendOutSettings(BlendOutTime);
-	return CreateMontage_WithBlendSettings(JointTracks, Asset, BlendInSettings, BlendOutSettings, BlendOutTriggerTime);
+	return CreateMontage_WithBlendSettings(JointTracks, AnimatedObject, BlendInSettings, BlendOutSettings, BlendOutTriggerTime);
 }
 
-TObjectPtr<UAnimMontage> UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName, FUMJointSequence> JointTracks, UAnimSequenceBase* Asset, const FMontageBlendSettings& BlendInSettings, const FMontageBlendSettings& BlendOutSettings, float InBlendOutTriggerTime)
+UAnimMontage* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName, FUMJointSequence> JointTracks, USkeletalMesh* AnimatedObject, const FMontageBlendSettings& BlendInSettings, const FMontageBlendSettings& BlendOutSettings, float InBlendOutTriggerTime)
 {
-	// create temporary montage and play
-	bool bValidAsset = Asset && !Asset->IsA(UAnimMontage::StaticClass());
-	if (!bValidAsset)
-	{
-		PURE_VIRTUAL(UAnimSequenceBase::GetAnimationPose, )
-		// user warning
-		UE_LOG(LogAnimMontage, Warning, TEXT("PlaySlotAnimationAsDynamicMontage: Invalid input asset(%s). If Montage, please use Montage_Play"), *GetNameSafe(Asset));
-		return nullptr;
-	}
-
-	USkeleton* AssetSkeleton = Asset->GetSkeleton();
-	if (!Asset->CanBeUsedInComposition())
-	{
-		UE_LOG(LogAnimMontage, Warning, TEXT("This animation isn't supported to play as montage"));
-		return nullptr;
-	}
 
 	// now play
 	UAnimMontage* NewMontage = NewObject<UAnimMontage>();
-	NewMontage->SetSkeleton(AssetSkeleton);
+	NewMontage->SetSkeleton(AnimatedObject->GetSkeleton());
 	
 	// #if WITH_EDITOR
 	// #define LOCTEXT_NAMESPACE "Set Segment Length"
 	// IAnimationDataController& Controller = NewMontage->GetController();
 	// #endif
 	int TrackIndex = 0;
-	for (auto Joint : JointTracks)
+	for (TTuple<FName, FUMJointSequence> Joint : JointTracks)
 	{
+		FName& JointName = Joint.Key;
+		TArray<FUMKeyFrame>& TrackData = Joint.Value.JointSequence;
+		FName AnimationName = FName(JointName.ToString() + TEXT("_") + FString::FromInt(Counter++));
+		UAnimSequence* AnimSequence = NewObject<UAnimSequence>(
+		Cast<UObject, USkeletalMesh>(AnimatedObject),
+		UAnimSequence::StaticClass(),
+		AnimationName,
+		EObjectFlags::RF_Public
+	);
+
+		// Notify asset registry
+		FAssetRegistryModule::AssetCreated(AnimSequence);
+		
+		// Set skeleton (you need to do this before you add animations to it or it will throw an error)
+		AnimSequence->ResetAnimation();
+		AnimSequence->SetSkeleton(AnimatedObject->GetSkeleton());
+
+		for(FUMKeyFrame Keyframe : TrackData)
+		{
+			AnimSequence->AddKeyToSequence(Keyframe.Time, JointName, Keyframe.Transform);
+			//AnimSequence->GetController().AddBoneCurve(JointName);
+		}
+		AnimSequence->GetController().NotifyPopulated();
 		int32 NewSlot;
 		if (TrackIndex == 0)
 		{
@@ -106,13 +106,16 @@ TObjectPtr<UAnimMontage> UUMAnimationProducer::CreateMontage_WithBlendSettings(T
 		}else{
 			NewSlot = NewMontage->SlotAnimTracks.AddDefaulted(1);
 		}
-		NewMontage->SlotAnimTracks[NewSlot].SlotName = Joint.Key;
+		NewMontage->SlotAnimTracks[NewSlot].SlotName = JointName;
 
 		// add new track
 		FSlotAnimationTrack& NewTrack = NewMontage->SlotAnimTracks[NewSlot];
-		NewTrack.SlotName = Joint.Key;
+		NewTrack.SlotName = JointName;
 		FAnimSegment NewSegment;
-		NewSegment.SetAnimReference(Asset, true);
+		NewSegment.SetAnimReference(AnimSequence, true);
+
+		
+		
 		//NewSegment.LoopingCount = LoopCount;
 		
 		/*#if WITH_EDITOR
@@ -133,13 +136,12 @@ TObjectPtr<UAnimMontage> UUMAnimationProducer::CreateMontage_WithBlendSettings(T
 
 		FCompositeSection NewSection;
 		
-		NewSection.SectionName = FName(Joint.Key.ToString() + TEXT("_") + FString::FromInt(TrackIndex));
-		NewSection.Link(Asset, Asset->GetPlayLength());
-
+		NewSection.SectionName = AnimationName;
+		NewSection.Link(AnimSequence, AnimSequence->GetPlayLength());
 		float StartTime = 0.0f;
-		if(Joint.Value.JointSequence.Num() > 0)
+		if(TrackData.Num() > 0)
 		{
-			StartTime = Joint.Value.JointSequence[0].Time; //the time of the first keyframe in the JointTracks's JointSequence
+			StartTime = TrackData[0].Time; //the time of the first keyframe in the JointTracks's JointSequence
 		}
 		NewSection.SetTime(StartTime);
 
