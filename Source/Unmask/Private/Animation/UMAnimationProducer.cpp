@@ -5,6 +5,8 @@
 
 static int Counter = 0;
 
+#define FPS 60
+
 /*// From https://forums.unrealengine.com/t/creating-a-uanimsequence-from-scratch-using-addkeytosequence/774856/5?u=sf2979
 UAnimMontage* UUMAnimationProducer::CreateMontage(
 	const TMap<FName, TArray<FUMKeyFrame>>& JointTracks, USkeletalMesh* AnimatedObject
@@ -92,7 +94,9 @@ UAnimMontage* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName, 
 		// Set skeleton (you need to do this before you add animations to it or it will throw an error)
 		AnimSequence->ResetAnimation();
 		AnimSequence->SetSkeleton(AnimatedObject->GetSkeleton());
-
+		AnimSequence->ImportFileFramerate = FPS;    
+		AnimSequence->ImportResampleFramerate = FPS;    
+		
 		for(FUMKeyFrame Keyframe : TrackData)
 		{
 			AnimSequence->AddKeyToSequence(Keyframe.Time, JointName, Keyframe.Transform);
