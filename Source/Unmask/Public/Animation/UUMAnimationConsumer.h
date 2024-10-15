@@ -15,5 +15,6 @@ class UNMASK_API UUMAnimationConsumer : public UObject
 	GENERATED_BODY()
 
 	public:
-		static float Distance(UAnimMontage x, UAnimMontage y, float fidelity);
+	    UFUNCTION(BlueprintCallable, Category = "AnimMath")
+		static float Distance(UAnimMontage *X, UAnimMontage *Y, float Fidelity);
 };

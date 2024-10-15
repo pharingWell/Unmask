@@ -3,13 +3,13 @@
 
 #include "Animation/UUMAnimationConsumer.h"
 
-float UUMAnimationConsumer::Distance(UAnimMontage x, UAnimMontage y, float fidelity)
+float UUMAnimationConsumer::Distance(UAnimMontage *X, UAnimMontage *Y, float Fidelity)
 {
-	float dist = 0;
-	for (double t = 0; t < std::max(x.CalculateSequenceLength(), y.CalculateSequenceLength()); t += fidelity)
+	float Distance = 0;
+	for (double t = 0; t < std::max(X->CalculateSequenceLength(), Y->CalculateSequenceLength()); t += Fidelity)
 	{
-		TArray<FSlotAnimationTrack> XTrack = x.SlotAnimTracks;
-		TArray<FSlotAnimationTrack> YTrack = y.SlotAnimTracks;
+		TArray<FSlotAnimationTrack> XTrack = X->SlotAnimTracks;
+		TArray<FSlotAnimationTrack> YTrack = Y->SlotAnimTracks;
 
 		for (int i = 0; i < XTrack.Num(); i++)
 		{
@@ -39,9 +39,9 @@ float UUMAnimationConsumer::Distance(UAnimMontage x, UAnimMontage y, float fidel
 			{
 				FRotator XRotator = XBones[j].Rotator();
 				FRotator YRotator = YBones[j].Rotator();
-				dist += sqrt(pow(XRotator.Pitch - YRotator.Pitch, 2) + pow(XRotator.Roll - YRotator.Roll, 2) + pow(XRotator.Yaw - YRotator.Yaw, 2));
+				Distance += sqrt(pow(XRotator.Pitch - YRotator.Pitch, 2) + pow(XRotator.Roll - YRotator.Roll, 2) + pow(XRotator.Yaw - YRotator.Yaw, 2));
 			}
 		}
 	}
-	return dist;
+	return Distance;
 }
