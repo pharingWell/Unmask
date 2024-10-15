@@ -1,6 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Animation/UMAnimationProducer.h"
+
+#include "Animation/AnimationSettings.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 
 static int Counter = 0;
@@ -82,11 +84,11 @@ UAnimMontage* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName, 
 		TArray<FUMKeyFrame>& TrackData = Joint.Value.JointSequence;
 		FName AnimationName = FName(JointName.ToString() + TEXT("_") + FString::FromInt(Counter++));
 		UAnimSequence* AnimSequence = NewObject<UAnimSequence>(
-		Cast<UObject, USkeletalMesh>(AnimatedObject),
-		UAnimSequence::StaticClass(),
-		AnimationName,
-		EObjectFlags::RF_Public
-	);
+			Cast<UObject, USkeletalMesh>(AnimatedObject),
+			UAnimSequence::StaticClass(),
+			AnimationName,
+			EObjectFlags::RF_Public
+		);
 
 		// Notify asset registry
 		FAssetRegistryModule::AssetCreated(AnimSequence);
@@ -94,8 +96,33 @@ UAnimMontage* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName, 
 		// Set skeleton (you need to do this before you add animations to it or it will throw an error)
 		AnimSequence->ResetAnimation();
 		AnimSequence->SetSkeleton(AnimatedObject->GetSkeleton());
-		AnimSequence->ImportFileFramerate = FPS;    
-		AnimSequence->ImportResampleFramerate = FPS;    
+
+		// Setting the framerate has to be done inside the controller.  You can't just set the variables.  
+		// I don't know why, I just know that this is how you have to do it. Code comes from here:
+		// https://forums.unrealengine.com/t/is-there-any-way-to-modify-bone-tracks-with-c/500162/6
+
+		#if WITH_EDITOR
+		#define LOCTEXT_NAMESPACE "UpdateFrameRate"
+		float PlayLength = 0.f;
+		if(TrackData.Num() > 0)
+		{
+			PlayLength = TrackData.Last().Time; //the time of the first keyframe in the JointTracks's JointSequence
+		}
+		// Initialize data model
+		// https://docs.unrealengine.com/5.0/en-US/API/Developer/AnimationDataController/UAnimDataController/
+		IAnimationDataController& Controller = AnimSequence->GetController();
+		Controller.InitializeModel();
+		Controller.OpenBracket(LOCTEXT("InitializeAnimation", "Initialize New Anim Sequence"));
+		{	
+			auto DefaultFrameRate = UAnimationSettings::Get()->GetDefaultFrameRate();
+			// This line is to set actual frame rate
+			Controller.SetNumberOfFrames(FFrameNumber(StaticCast<int32, float>(DefaultFrameRate.AsDecimal() * PlayLength)), true);
+			Controller.SetFrameRate(FFrameRate(FPS, 1), true);  //FFrameRate(numerator, denominator)
+			Controller.NotifyPopulated();
+		}
+
+		#endif
+		#undef LOCTEXT
 		
 		for(FUMKeyFrame Keyframe : TrackData)
 		{
@@ -107,7 +134,7 @@ UAnimMontage* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName, 
 		if (TrackIndex == 0)
 		{
 			NewSlot = 0;
-		}else{
+		} else {
 			NewSlot = NewMontage->SlotAnimTracks.AddDefaulted(1);
 		}
 		NewMontage->SlotAnimTracks[NewSlot].SlotName = JointName;
@@ -138,6 +165,7 @@ UAnimMontage* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName, 
 		
 		NewTrack.AnimTrack.AnimSegments.Add(NewSegment);
 
+		/*
 		FCompositeSection NewSection;
 		
 		NewSection.SectionName = AnimationName;
@@ -151,6 +179,7 @@ UAnimMontage* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName, 
 
 		// add new section
 		NewMontage->CompositeSections.Add(NewSection);
+		*/
 		TrackIndex++;
 	}
 
