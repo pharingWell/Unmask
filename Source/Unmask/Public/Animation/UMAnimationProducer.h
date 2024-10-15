@@ -14,10 +14,12 @@ class UNMASK_API UUMAnimationProducer : public UObject
 	GENERATED_BODY()
 
 public:
-	static TObjectPtr<UAnimMontage> CreateMontage(USkeletalMesh* AnimatedObject, TMap<FName, FUMJointSequence> BodyJointSequences);
-	UAnimMontage* CreateSlotAnimationAsDynamicMontage_WithBlendSettings(UAnimSequenceBase* Asset, FName SlotNodeName,
-	                                                                    const FMontageBlendSettings& BlendInSettings,
-	                                                                    const FMontageBlendSettings& BlendOutSettings,
-	                                                                    float InPlayRate, int32 LoopCount,
-	                                                                    float InBlendOutTriggerTime);
+	static TObjectPtr<UAnimMontage> CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks, USkeletalMesh* AnimatedObject);
+	static TObjectPtr<UAnimMontage> CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks, UAnimSequenceBase* Asset);
+	static TObjectPtr<UAnimMontage> CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks, UAnimSequenceBase* Asset,
+	                                              float BlendInTime, float BlendOutTime, float BlendOutTriggerTime);
+	static TObjectPtr<UAnimMontage> CreateMontage_WithBlendSettings(TMap<FName, FUMJointSequence> JointTracks, UAnimSequenceBase* Asset,
+	                                                                const FMontageBlendSettings& BlendInSettings, const FMontageBlendSettings& BlendOutSettings, float InBlendOutTriggerTime);
+
+	
 };

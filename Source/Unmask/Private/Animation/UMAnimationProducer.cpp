@@ -4,7 +4,7 @@
 #include "Animation/UMAnimationProducer.h"
 
 #include "AnimationUtils.h"
-#include "Animation/UMJointSequenceStruct.h"
+#include "Animation/AnimationSettings.h"
 #include "Animation/UMSequenceStructs.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 
@@ -13,9 +13,9 @@
 static int Counter = 0;
 
 
-TObjectPtr<UAnimMontage> UUMAnimationProducer::CreateMontage(USkeletalMesh* AnimatedObject,
-                                                           TMap<FName, FUMJointSequence> BodyJointSequences)
-{
+TObjectPtr<UAnimMontage> UUMAnimationProducer::CreateMontage(
+	const TMap<FName, FUMJointSequence>& JointTracks, USkeletalMesh* AnimatedObject
+){
 	UAnimSequence* AnimSequence = NewObject<UAnimSequence>(
 		Cast<UObject, USkeletalMesh>(AnimatedObject),
 		UAnimSequence::StaticClass(),
@@ -29,8 +29,6 @@ TObjectPtr<UAnimMontage> UUMAnimationProducer::CreateMontage(USkeletalMesh* Anim
 	// Set skeleton (you need to do this before you add animations to it or it will throw an error)
 	AnimSequence->ResetAnimation();
 	AnimSequence->SetSkeleton(AnimatedObject->GetSkeleton());
-	AnimSequence->ImportFileFramerate = FPS;    
-	AnimSequence->ImportResampleFramerate = FPS;    
 
 	// Setting the framerate has to be done inside the controller.  You can't just set the variables.  
 	// I don't know why, I just know that this is how you have to do it. Code comes from here:
@@ -54,44 +52,24 @@ TObjectPtr<UAnimMontage> UUMAnimationProducer::CreateMontage(USkeletalMesh* Anim
 	#undef LOCTEXT_NAMESPACE
 	#endif
 
-
-	/*
-	 *
-	*	FAnimSegment()
-		PRAGMA_DISABLE_DEPRECATION_WARNINGS
-		: AnimReference(nullptr)
-		PRAGMA_ENABLE_DEPRECATION_WARNINGS
-		, StartPos(0.f)
-		, AnimStartTime(0.f)
-		, AnimEndTime(0.f)
-		, AnimPlayRate(1.f)
-		, LoopingCount(1)
-		, bValid(true)
-	{
-	}
-	 *
-	 * 
-	 */
-	//...
-
-		//[loop through file and figure out a time, a bone, and a transform]
-
-				//AnimSequence->AddKeyToSequence(CurrentTime, CurrentBone, T);
-	UAnimMontage* NewMontage = UAnimMontage::CreateSlotAnimationAsDynamicMontage(
-	AnimSequence,
-	SlotName,
-	BlendInTime,
-	BlendOutTime,
-	InPlayRate,
-	LoopCount
-);
-	//...
-	
-
-	return AnimMontage;
+	return CreateMontage(JointTracks, AnimSequence);
 }
 
-UAnimMontage* UUMAnimationProducer::CreateSlotAnimationAsDynamicMontage_WithBlendSettings(TMap<FName, FUMJointSequence> BoneTracks, UAnimSequenceBase* Asset, const FMontageBlendSettings& BlendInSettings, const FMontageBlendSettings& BlendOutSettings, float InBlendOutTriggerTime)
+TObjectPtr<UAnimMontage> UUMAnimationProducer::CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks, UAnimSequenceBase* Asset)
+{
+	FMontageBlendSettings BlendInSettings(0.0f);
+	FMontageBlendSettings BlendOutSettings(0.0f);
+	return CreateMontage_WithBlendSettings(JointTracks, Asset, BlendInSettings, BlendOutSettings, 0.0f);
+}
+
+TObjectPtr<UAnimMontage> UUMAnimationProducer::CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks, UAnimSequenceBase* Asset, float BlendInTime, float BlendOutTime, float BlendOutTriggerTime)
+{
+	FMontageBlendSettings BlendInSettings(BlendInTime);
+	FMontageBlendSettings BlendOutSettings(BlendOutTime);
+	return CreateMontage_WithBlendSettings(JointTracks, Asset, BlendInSettings, BlendOutSettings, BlendOutTriggerTime);
+}
+
+TObjectPtr<UAnimMontage> UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName, FUMJointSequence> JointTracks, UAnimSequenceBase* Asset, const FMontageBlendSettings& BlendInSettings, const FMontageBlendSettings& BlendOutSettings, float InBlendOutTriggerTime)
 {
 	// create temporary montage and play
 	bool bValidAsset = Asset && !Asset->IsA(UAnimMontage::StaticClass());
@@ -114,12 +92,12 @@ UAnimMontage* UUMAnimationProducer::CreateSlotAnimationAsDynamicMontage_WithBlen
 	UAnimMontage* NewMontage = NewObject<UAnimMontage>();
 	NewMontage->SetSkeleton(AssetSkeleton);
 	
-	#if WITH_EDITOR
-	#define LOCTEXT_NAMESPACE "Set Segment Length"
-	IAnimationDataController& Controller = NewMontage->GetController();
-	#endif
+	// #if WITH_EDITOR
+	// #define LOCTEXT_NAMESPACE "Set Segment Length"
+	// IAnimationDataController& Controller = NewMontage->GetController();
+	// #endif
 	int TrackIndex = 0;
-	for (auto BoneTrack : BoneTracks)
+	for (auto Joint : JointTracks)
 	{
 		int32 NewSlot;
 		if (TrackIndex == 0)
@@ -128,38 +106,40 @@ UAnimMontage* UUMAnimationProducer::CreateSlotAnimationAsDynamicMontage_WithBlen
 		}else{
 			NewSlot = NewMontage->SlotAnimTracks.AddDefaulted(1);
 		}
-		NewMontage->SlotAnimTracks[NewSlot].SlotName = BoneTrack.Key;
+		NewMontage->SlotAnimTracks[NewSlot].SlotName = Joint.Key;
 
 		// add new track
 		FSlotAnimationTrack& NewTrack = NewMontage->SlotAnimTracks[NewSlot];
+		NewTrack.SlotName = Joint.Key;
 		FAnimSegment NewSegment;
 		NewSegment.SetAnimReference(Asset, true);
 		//NewSegment.LoopingCount = LoopCount;
 		
-		#if WITH_EDITOR
+		/*#if WITH_EDITOR
 		// Initialize data model
 		// https://docs.unrealengine.com/5.0/en-US/API/Developer/AnimationDataController/UAnimDataController/
 		
 		Controller.OpenBracket(LOCTEXT("InitializeAnimation", "Initialize New Anim Segment Length"));
 		{
-			Controller.SetFrameRate(NewSegment.GetAnimReference().Get()->GetSamplingFrameRate(), true);
+			Controller.SetFrameRate(UAnimationSettings::Get()->GetDefaultFrameRate(), true);
 			Controller.NotifyPopulated();
 		}
 		Controller.CloseBracket();
 
 		#undef LOCTEXT_NAMESPACE
-		#endif
+		#endif*/
 		
 		NewTrack.AnimTrack.AnimSegments.Add(NewSegment);
 
 		FCompositeSection NewSection;
-		NewSection.SectionName = TEXT("Default");
+		
+		NewSection.SectionName = FName(Joint.Key.ToString() + TEXT("_") + FString::FromInt(TrackIndex));
 		NewSection.Link(Asset, Asset->GetPlayLength());
 
 		float StartTime = 0.0f;
-		if(BoneTrack.Value.JointSequence.Num() > 0)
+		if(Joint.Value.JointSequence.Num() > 0)
 		{
-			StartTime = BoneTrack.Value.JointSequence[0].Time; //the time of the first keyframe in the JointSequence
+			StartTime = Joint.Value.JointSequence[0].Time; //the time of the first keyframe in the JointTracks's JointSequence
 		}
 		NewSection.SetTime(StartTime);
 
