@@ -9,10 +9,10 @@ struct FUMKeyFrame
 
 public:
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
-	float Time;
+	float Time = 0.f;
 	
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
-	FTransform Transform;
+	FTransform Transform = {};
 
 };
 
@@ -22,7 +22,7 @@ struct FUMJointSequence
 	GENERATED_BODY()
 public:
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
-	TArray<FUMKeyFrame> JointSequence;
+	TArray<FUMKeyFrame> JointSequence = {};
 
 };
 
