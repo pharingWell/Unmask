@@ -2,12 +2,19 @@
 
 #include "Animation/UMAnimationProducer.h"
 
+#include "AssetToolsModule.h"
 #include "AssetViewUtils.h"
+#include "ContentBrowserModule.h"
+#include "IContentBrowserSingleton.h"
 #include "Animation/AnimationSettings.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Factories/AnimSequenceFactory.h"
 #include "GenericPlatform/GenericPlatformOutputDevices.h"
 #include "Misc/AutomationTest.h"
 #include "UObject/SavePackage.h"
+#if WITH_EDITOR
+#include "Factories/AnimSequenceFactory.h"
+#endif
 static int Counter = 0;
 
 #define FPS 60
@@ -22,136 +29,126 @@ bool Test_AnimationDetection::RunTest(const FString& Parameters)
 }
 
 
-UAnimMontage* UUMAnimationProducer::CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks, USkeletalMesh* AnimatedObject)
+UAnimSequence* UUMAnimationProducer::CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks,
+                                                   USkeletalMesh* AnimatedObject)
 {
 	FMontageBlendSettings BlendInSettings(0.0f);
 	FMontageBlendSettings BlendOutSettings(0.0f);
 	return CreateMontage_WithBlendSettings(JointTracks, AnimatedObject, BlendInSettings, BlendOutSettings, 0.0f);
 }
 
-UAnimMontage* UUMAnimationProducer::CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks, USkeletalMesh* AnimatedObject, float BlendInTime, float BlendOutTime, float BlendOutTriggerTime)
+UAnimSequence* UUMAnimationProducer::CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks,
+                                                   USkeletalMesh* AnimatedObject, float BlendInTime, float BlendOutTime,
+                                                   float BlendOutTriggerTime)
 {
 	FMontageBlendSettings BlendInSettings(BlendInTime);
 	FMontageBlendSettings BlendOutSettings(BlendOutTime);
 	return CreateMontage_WithBlendSettings(JointTracks, AnimatedObject, BlendInSettings, BlendOutSettings, BlendOutTriggerTime);
 }
 
-UAnimMontage* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName, FUMJointSequence> JointTracks, USkeletalMesh* AnimatedObject, const FMontageBlendSettings& BlendInSettings, const FMontageBlendSettings& BlendOutSettings, float InBlendOutTriggerTime)
+// Code from https://forums.unrealengine.com/t/creating-a-uanimsequence-from-scratch-using-addkeytosequence/774856
+
+UAnimSequence* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName, FUMJointSequence> JointTracks,
+                                                                     USkeletalMesh* AnimatedObject,
+                                                                     const FMontageBlendSettings& BlendInSettings,
+                                                                     const FMontageBlendSettings& BlendOutSettings,
+                                                                     float InBlendOutTriggerTime)
 {
 	// From https://forums.unrealengine.com/t/create-new-asset-from-code-save-uobject-to-asset/328445/4?u=sf2979
 	// and https://georgy.dev/posts/save-uobject-to-package/
-	FString PACKAGE_NAME = FString("Montage1");
+	// and https://dev.epicgames.com/community/learning/knowledge-base/wzdm/unreal-engine-how-to-create-new-assets-in-c
+
 	FString SUBFOLDER = FString("UM_MVP/");
-	FString PackagePath = FString("/Game/") + SUBFOLDER + PACKAGE_NAME;
-	UPackage *Package = CreatePackage(*PackagePath);
+	FString PACKAGE_NAME = FString("Sequence2");
+	FString PackageName = FString("/Game/") + SUBFOLDER + PACKAGE_NAME;
+	UE_LOG(LogScript, Warning, TEXT("Name: %s"), *PackageName);
+	UPackage *Package = CreatePackage(*PackageName);
 	FSavePackageArgs PackageArgs = {};
 	{
 		PackageArgs.TopLevelFlags = RF_Public | RF_Standalone;
-		PackageArgs.SaveFlags = SAVE_None;
-		PackageArgs.Error = FGenericPlatformOutputDevices::GetLog();
 		PackageArgs.bSlowTask = true;
 	}
-	UAnimMontage* NewMontage = NewObject<UAnimMontage>(Package, UAnimMontage::StaticClass(),
-		FName(FString("AM_") + PACKAGE_NAME), EObjectFlags::RF_Standalone);
-	NewMontage->SetSkeleton(AnimatedObject->GetSkeleton());
+	FName AnimationName = FName(TEXT("Anim_") + FString::FromInt(Counter++));
+#if 1 == 0
+	UAnimSequenceFactory* Factory = NewObject<UAnimSequenceFactory>();
+	Factory->PreviewSkeletalMesh = AnimatedObject;
+	Factory->TargetSkeleton = AnimatedObject->GetSkeleton();
+	UAnimSequence* AnimSequence  = Cast<UAnimSequence>(Factory->FactoryCreateNew(UAnimSequence::StaticClass(),
+		Package, AnimationName, EObjectFlags::RF_Standalone, AnimatedObject, nullptr));
 	
-	FAssetRegistryModule::AssetCreated(NewMontage);
-	bool bDirty = NewMontage->MarkPackageDirty();
-	if (bDirty)
-	{
-		UE_LOG(LogScript, Warning, TEXT("Ye not be dirty!"))
-	}
-	// #if WITH_EDITOR
-	// #define LOCTEXT_NAMESPACE "Set Segment Length"
-	// IAnimationDataController& Controller = NewMontage->GetController();
-	// #endif
-	int TrackIndex = 0;
+	// Cast<UAnimSequence>(AssetToolsModule.Get().CreateAsset(Name, PackagePath,
+	// UAnimSequence::StaticClass(), Factory, AnimatedObject->GetName(), Errors));
+#else
+	UAnimSequence* AnimSequence = NewObject<UAnimSequence>(
+	 Package,
+	 UAnimSequence::StaticClass(),
+	 AnimationName,
+	 EObjectFlags::RF_Standalone
+	 );
+#endif
+	AnimSequence->SetPreviewMesh(AnimatedObject);
+	AnimSequence->SetSkeleton(AnimatedObject->GetSkeleton());
+	// Set skeleton (you need to do this before you add animations to it or it will throw an error)
+	AnimSequence->ResetAnimation();
+	
+	// Notify asset registry
+	FAssetRegistryModule::AssetCreated(AnimSequence);
+
+	// Setting the framerate has to be done inside the controller.  You can't just set the variables.  
+	// I don't know why, I just know that this is how you have to do it. Code comes from here:
+	// https://forums.unrealengine.com/t/is-there-any-way-to-modify-bone-tracks-with-c/500162/6
+	//UAnimationSequencerDataModel
+	#if WITH_EDITOR
+	#define LOCTEXT_NAMESPACE "UpdateFrameRate"
+	float PlayLength = 0.f;
 	for (TTuple<FName, FUMJointSequence> Joint : JointTracks)
 	{
-		FName& JointName = Joint.Key;
-		TArray<FUMKeyFrame>& TrackData = Joint.Value.JointSequence;
-		FName AnimationName = FName(JointName.ToString() + TEXT("_") + FString::FromInt(Counter++));
-		UAnimSequence* AnimSequence = NewObject<UAnimSequence>(
-			Package,
-			UAnimSequence::StaticClass(),
-			AnimationName,
-			EObjectFlags::RF_Standalone
-		);
-		// Notify asset registry
-		FAssetRegistryModule::AssetCreated(AnimSequence);
-		bDirty = AnimSequence->MarkPackageDirty();
-		if (bDirty)
+		if(Joint.Value.JointSequence.Num() > 0)
 		{
-			UE_LOG(LogScript, Warning, TEXT("Ye not be dirty!"))
+			PlayLength = FMath::Max( PlayLength, Joint.Value.JointSequence.Last().Time); //the time of the last keyframe in the JointTracks's JointSequence
 		}
-		// Set skeleton (you need to do this before you add animations to it or it will throw an error)
-		AnimSequence->ResetAnimation();
-		AnimSequence->SetSkeleton(AnimatedObject->GetSkeleton());
-		
-		// Setting the framerate has to be done inside the controller.  You can't just set the variables.  
-		// I don't know why, I just know that this is how you have to do it. Code comes from here:
-		// https://forums.unrealengine.com/t/is-there-any-way-to-modify-bone-tracks-with-c/500162/6
-		
-		#if WITH_EDITOR
-		#define LOCTEXT_NAMESPACE "UpdateFrameRate"
-		float PlayLength = 0.f;
-		if(TrackData.Num() > 0)
-		{
-			PlayLength = TrackData.Last().Time; //the time of the first keyframe in the JointTracks's JointSequence
-		}
-		// Initialize data model
-		// https://docs.unrealengine.com/5.0/en-US/API/Developer/AnimationDataController/UAnimDataController/
-		IAnimationDataController& Controller = AnimSequence->GetController();
-		Controller.OpenBracket(LOCTEXT("InitializeAnimation", "Initialize New Anim Sequence"));
-		{
-			Controller.InitializeModel();
-			auto DefaultFrameRate = UAnimationSettings::Get()->GetDefaultFrameRate();
-			// This line is to set actual frame rate
-			Controller.SetNumberOfFrames(FFrameNumber(StaticCast<int32, float>(DefaultFrameRate.AsDecimal() * PlayLength)), true);
-			Controller.SetFrameRate(FFrameRate(FPS, 1), true);  //FFrameRate(numerator, denominator)
-			Controller.NotifyPopulated();
-		}
-
-		#endif
-		#undef LOCTEXT
-		
-		for(FUMKeyFrame Keyframe : TrackData)
-		{
-			AnimSequence->AddKeyToSequence(Keyframe.Time, JointName, Keyframe.Transform);
-			//AnimSequence->GetController().AddBoneCurve(JointName);
-		}
-		AnimSequence->GetController().NotifyPopulated();
-		bool bSuccess = UPackage::SavePackage(Package, Cast<UObject,UAnimSequence>(*AnimSequence), *Package->GetLoadedPath().GetLocalFullPath(), PackageArgs);
-		if (!bSuccess)
-		{
-			UE_LOG(LogSavePackage, Error, TEXT("Failed to save package. %s"), *Package->GetName());
-		}
-		
-		FSlotAnimationTrack Blank = {};
-		FName SlotName = FName(AnimationName.ToString() + "_Slot");
-		FSlotAnimationTrack& NewTrack = NewMontage->AddSlot(SlotName); // Skip default slot
-
-		// add new track
-		NewTrack.SlotName = JointName;
-		FAnimSegment NewSegment;
-		NewSegment.SetAnimReference(AnimSequence, true);
-		NewTrack.AnimTrack.AnimSegments.Add(NewSegment);
-		TrackIndex++;
 	}
+	// Initialize data model
+	// https://docs.unrealengine.com/5.0/en-US/API/Developer/AnimationDataController/UAnimDataController/
+	IAnimationDataController& Controller = AnimSequence->GetController();
+	Controller.OpenBracket(LOCTEXT("InitializeAnimation", "Initialize New Anim Sequence"));
+	{
+		Controller.InitializeModel();
+		auto DefaultFrameRate = UAnimationSettings::Get()->GetDefaultFrameRate();
+		// This line is to set actual frame rate
+		Controller.SetNumberOfFrames(FFrameNumber(StaticCast<int32, float>(DefaultFrameRate.AsDecimal() * PlayLength)), true);
+		Controller.SetFrameRate(FFrameRate(FPS, 1), true);  //FFrameRate(numerator, denominator)
+		Controller.NotifyPopulated();
+	}
+	#endif
+	#undef LOCTEXT
 	
-	NewMontage->BlendIn = FAlphaBlend(BlendInSettings.Blend);
-	NewMontage->BlendModeIn = BlendInSettings.BlendMode;
-	NewMontage->BlendProfileIn = BlendInSettings.BlendProfile;
-	NewMontage->BlendOut = FAlphaBlend(BlendOutSettings.Blend);
-	NewMontage->BlendModeOut = BlendOutSettings.BlendMode;
-	NewMontage->BlendProfileOut = BlendOutSettings.BlendProfile;
-	NewMontage->GetCurveData();
-	NewMontage->BlendOutTriggerTime = InBlendOutTriggerTime;
-	
-	bool bSuccess = UPackage::SavePackage(Package, Cast<UObject,UAnimMontage>(*NewMontage), *Package->GetLoadedPath().GetLocalFullPath(), PackageArgs);
-	if (!bSuccess)
+	for (TTuple<FName, FUMJointSequence> Joint : JointTracks)
+	{
+		for(TArray<FUMKeyFrame>& TrackData = Joint.Value.JointSequence; auto [Time, Transform] : TrackData) //structured binding
+		{
+			AnimSequence->AddKeyToSequence(Time, Joint.Key, Transform);
+		}
+	}
+
+	AnimSequence->GetController().NotifyPopulated();
+
+	FSavePackageResultStruct SuccessResult = UPackage::Save(Package, Cast<UObject,UAnimSequence>(*AnimSequence), *Package->GetLoadedPath().GetLocalFullPath(), PackageArgs);
+	if (!SuccessResult.IsSuccessful())
 	{
 		UE_LOG(LogSavePackage, Error, TEXT("Failed to save package. %s"), *Package->GetName());
+		return AnimSequence;
 	}
-	return NewMontage;
+	
+	
+	
+
+	// Tell content browser to show the newly created asset
+	FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
+	
+	TArray<UObject*> Objects;
+	Objects.Add(AnimSequence);
+	ContentBrowserModule.Get().SyncBrowserToAssets(Objects);
+	
+	return AnimSequence;
 }
