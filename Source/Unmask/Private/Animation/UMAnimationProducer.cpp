@@ -40,10 +40,19 @@ UAnimMontage* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName, 
 {
 	// From https://forums.unrealengine.com/t/create-new-asset-from-code-save-uobject-to-asset/328445/4?u=sf2979
 	// and https://georgy.dev/posts/save-uobject-to-package/
-	FString SubFolder = FString("UM_MVP/");
-	FString PackagePath = FString("/Game/") + SubFolder + FString("Montage1");
+	FString PACKAGE_NAME = FString("Montage1");
+	FString SUBFOLDER = FString("UM_MVP/");
+	FString PackagePath = FString("/Game/") + SUBFOLDER + PACKAGE_NAME;
 	UPackage *Package = CreatePackage(*PackagePath);
-	UAnimMontage* NewMontage = NewObject<UAnimMontage>(Package, UAnimMontage::StaticClass(), FName(TEXT("NewMontage")), EObjectFlags::RF_Standalone);
+	FSavePackageArgs PackageArgs = {};
+	{
+		PackageArgs.TopLevelFlags = RF_Public | RF_Standalone;
+		PackageArgs.SaveFlags = SAVE_None;
+		PackageArgs.Error = FGenericPlatformOutputDevices::GetLog();
+		PackageArgs.bSlowTask = true;
+	}
+	UAnimMontage* NewMontage = NewObject<UAnimMontage>(Package, UAnimMontage::StaticClass(),
+		FName(FString("AM_") + PACKAGE_NAME), EObjectFlags::RF_Standalone);
 	NewMontage->SetSkeleton(AnimatedObject->GetSkeleton());
 	
 	FAssetRegistryModule::AssetCreated(NewMontage);
@@ -63,15 +72,18 @@ UAnimMontage* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName, 
 		TArray<FUMKeyFrame>& TrackData = Joint.Value.JointSequence;
 		FName AnimationName = FName(JointName.ToString() + TEXT("_") + FString::FromInt(Counter++));
 		UAnimSequence* AnimSequence = NewObject<UAnimSequence>(
-			NewMontage,
+			Package,
 			UAnimSequence::StaticClass(),
 			AnimationName,
 			EObjectFlags::RF_Standalone
 		);
-		
-
 		// Notify asset registry
 		FAssetRegistryModule::AssetCreated(AnimSequence);
+		bDirty = AnimSequence->MarkPackageDirty();
+		if (bDirty)
+		{
+			UE_LOG(LogScript, Warning, TEXT("Ye not be dirty!"))
+		}
 		// Set skeleton (you need to do this before you add animations to it or it will throw an error)
 		AnimSequence->ResetAnimation();
 		AnimSequence->SetSkeleton(AnimatedObject->GetSkeleton());
@@ -109,17 +121,17 @@ UAnimMontage* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName, 
 			//AnimSequence->GetController().AddBoneCurve(JointName);
 		}
 		AnimSequence->GetController().NotifyPopulated();
-		int32 NewSlot;
-		if (TrackIndex == 0)
+		bool bSuccess = UPackage::SavePackage(Package, Cast<UObject,UAnimSequence>(*AnimSequence), *Package->GetLoadedPath().GetLocalFullPath(), PackageArgs);
+		if (!bSuccess)
 		{
-			NewSlot = 0;
-		} else {
-			NewSlot = NewMontage->SlotAnimTracks.AddDefaulted(1);
+			UE_LOG(LogSavePackage, Error, TEXT("Failed to save package. %s"), *Package->GetName());
 		}
-		NewMontage->SlotAnimTracks[NewSlot].SlotName = JointName;
+		
+		FSlotAnimationTrack Blank = {};
+		FName SlotName = FName(AnimationName.ToString() + "_Slot");
+		FSlotAnimationTrack& NewTrack = NewMontage->AddSlot(SlotName); // Skip default slot
 
 		// add new track
-		FSlotAnimationTrack& NewTrack = NewMontage->SlotAnimTracks[NewSlot];
 		NewTrack.SlotName = JointName;
 		FAnimSegment NewSegment;
 		NewSegment.SetAnimReference(AnimSequence, true);
@@ -133,24 +145,13 @@ UAnimMontage* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName, 
 	NewMontage->BlendOut = FAlphaBlend(BlendOutSettings.Blend);
 	NewMontage->BlendModeOut = BlendOutSettings.BlendMode;
 	NewMontage->BlendProfileOut = BlendOutSettings.BlendProfile;
-
+	NewMontage->GetCurveData();
 	NewMontage->BlendOutTriggerTime = InBlendOutTriggerTime;
-	UE_LOG(LogScript, Warning, TEXT("Skeleton fullpath %s"), ToCStr(FPaths::ConvertRelativePathToFull(AnimatedObject->GetPathName())))
-
-	FString AssetPath = FString("../../../Unmask/Content/") + SubFolder;
-	FString FilePath = FString::Printf(TEXT("%s%s%s"), *AssetPath, *FString("Montage1"), *FPackageName::GetAssetPackageExtension());
-	UE_LOG(LogScript, Warning, TEXT("File Path %s"), ToCStr(FilePath))
-	FSavePackageArgs PackageArgs = {};
-	{
-		PackageArgs.TopLevelFlags = RF_Public | RF_Standalone;
-		PackageArgs.SaveFlags = SAVE_None;
-		PackageArgs.Error = FGenericPlatformOutputDevices::GetLog();
-		PackageArgs.bSlowTask = true;
-	}
-	bool bSuccess = UPackage::SavePackage(Package, NewMontage, *FilePath, PackageArgs);
+	
+	bool bSuccess = UPackage::SavePackage(Package, Cast<UObject,UAnimMontage>(*NewMontage), *Package->GetLoadedPath().GetLocalFullPath(), PackageArgs);
 	if (!bSuccess)
 	{
-		UE_LOG(LogSavePackage, Error, TEXT("Failed to save package. Try google?"));
+		UE_LOG(LogSavePackage, Error, TEXT("Failed to save package. %s"), *Package->GetName());
 	}
 	return NewMontage;
 }
