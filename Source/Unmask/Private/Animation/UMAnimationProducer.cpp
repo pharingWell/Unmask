@@ -54,15 +54,6 @@ UAnimSequence* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName,
                                                                      const FMontageBlendSettings& BlendOutSettings,
                                                                      float InBlendOutTriggerTime)
 {
-
-	TMap<FName, FUMJointSequence> Map;
-	FUMJointSequence Val{};
-	Map.Add ({"Key", Val});
-	TArray<FUMKeyFrame> Fum;
-	Fum.Add(FUMKeyFrame());
-	Map.Find("Key")->JointSequence = Fum;
-	UE_LOG(LogScript, Warning, TEXT("N:%d"), Map.Find("Key")->JointSequence.Num()); //N: 1
-	return nullptr;
 	
 	// From https://forums.unrealengine.com/t/create-new-asset-from-code-save-uobject-to-asset/328445/4?u=sf2979
 	// and https://georgy.dev/posts/save-uobject-to-package/
