@@ -3,7 +3,7 @@
 
 #include "Animation/UMAnimationConsumer.h"
 
-static TArray<FBoneIndexType> BoneIndexTypeArrayOfSize(int size)
+TArray<FBoneIndexType> UUMAnimationConsumer::BoneIndexTypeArrayOfSize(int size)
 {
 	TArray<FBoneIndexType> BoneIndexType;
 	for (int32 i = 0; i < size; i++)

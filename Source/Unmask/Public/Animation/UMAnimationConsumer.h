@@ -15,6 +15,8 @@ class UNMASK_API UUMAnimationConsumer : public UObject
 	GENERATED_BODY()
 
 	public:
-		UFUNCTION(BlueprintCallable, Category = "Animation|Math")
-		static float SequenceDifference(UAnimSequence *X, UAnimSequence *Y, float Fidelity);
+	TArray<FBoneIndexType> BoneIndexTypeArrayOfSize(int size);
+	
+	UFUNCTION(BlueprintCallable, Category = "Animation|Math")
+	static float SequenceDifference(UAnimSequence *X, UAnimSequence *Y, float Fidelity);
 };
