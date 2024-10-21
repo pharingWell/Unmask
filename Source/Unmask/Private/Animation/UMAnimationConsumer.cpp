@@ -3,12 +3,12 @@
 
 #include "Animation/UMAnimationConsumer.h"
 
-static TArray<FBoneIndexType> BoneTreeToBoneIndexTypeArray(TArray<int32> BoneTree)
+static TArray<FBoneIndexType> BoneIndexTypeArrayOfSize(int size)
 {
 	TArray<FBoneIndexType> BoneIndexType;
-	for (int32 i = 0; i < BoneTree.Num(); i++)
+	for (int32 i = 0; i < size; i++)
 	{
-		BoneIndexType.Add(BoneTree[i]);
+		BoneIndexType.Add(i);
 	}
 	return BoneIndexType;
 }
@@ -20,9 +20,7 @@ float UMAnimationConsumer::SequenceDifference(UAnimSequence *X, UAnimSequence *Y
 	float Distance = 0;
 
 	USkeleton* XSkeleton = X->GetSkeleton();
-	TArray<int32> XBones;
-	XSkeleton->GetChildBones(0, XBones);
-	FBoneContainer XBoneContainer = FBoneContainer(BoneTreeToBoneIndexTypeArray(XBones), UE::Anim::FCurveFilterSettings(), *XSkeleton);
+	FBoneContainer XBoneContainer = FBoneContainer(BoneIndexTypeArrayOfSize(XSkeleton->GetReferenceSkeleton().GetNum()), UE::Anim::FCurveFilterSettings(), *XSkeleton);
 	
 	FCompactPose XPose = FCompactPose();
 	XPose.SetBoneContainer(&XBoneContainer);
@@ -33,7 +31,7 @@ float UMAnimationConsumer::SequenceDifference(UAnimSequence *X, UAnimSequence *Y
 	USkeleton* YSkeleton = Y->GetSkeleton();
 	TArray<int32> YBones;
 	YSkeleton->GetChildBones(0, YBones);
-	FBoneContainer YBoneContainer = FBoneContainer(BoneTreeToBoneIndexTypeArray(YBones), UE::Anim::FCurveFilterSettings(), *YSkeleton);
+	FBoneContainer YBoneContainer = FBoneContainer(BoneIndexTypeArrayOfSize(YSkeleton->GetReferenceSkeleton().GetNum()), UE::Anim::FCurveFilterSettings(), *YSkeleton);
 	
 	FCompactPose YPose = FCompactPose();
 	YPose.SetBoneContainer(&YBoneContainer);
