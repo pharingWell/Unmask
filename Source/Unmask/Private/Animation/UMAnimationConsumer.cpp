@@ -63,5 +63,6 @@ float UUMAnimationConsumer::SequenceDifference(UAnimSequence *X, UAnimSequence *
 			Distance += Fidelity*sqrt(pow(XRotator.Pitch-YRotator.Pitch, 2) + pow(XRotator.Roll-YRotator.Roll, 2) + pow(XRotator.Yaw-YRotator.Yaw, 2));
 		}
 	}
+	Mark.Pop();
 	return Distance;
 }
