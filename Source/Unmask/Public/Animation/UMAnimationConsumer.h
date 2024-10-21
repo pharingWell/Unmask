@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class UNMASK_API UMAnimationConsumer : public UObject
+class UNMASK_API UUMAnimationConsumer : public UObject
 {
 	GENERATED_BODY()
 

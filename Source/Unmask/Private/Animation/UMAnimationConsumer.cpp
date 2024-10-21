@@ -13,7 +13,7 @@ static TArray<FBoneIndexType> BoneIndexTypeArrayOfSize(int size)
 	return BoneIndexType;
 }
 
-float UMAnimationConsumer::SequenceDifference(UAnimSequence *X, UAnimSequence *Y, float Fidelity)
+float UUMAnimationConsumer::SequenceDifference(UAnimSequence *X, UAnimSequence *Y, float Fidelity)
 {
 	FMemMark Mark(FMemStack::Get());
 	
