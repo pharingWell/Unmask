@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Animation/UMAnimationProducer.h"
-
+#include "Animation/UMAnimationConsumer.h"
 #include "AssetToolsModule.h"
 #include "AssetViewUtils.h"
 #include "ContentBrowserModule.h"
@@ -54,6 +54,16 @@ UAnimSequence* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName,
                                                                      const FMontageBlendSettings& BlendOutSettings,
                                                                      float InBlendOutTriggerTime)
 {
+
+	TMap<FName, FUMJointSequence> Map;
+	FUMJointSequence Val{};
+	Map.Add ({"Key", Val});
+	TArray<FUMKeyFrame> Fum;
+	Fum.Add(FUMKeyFrame());
+	Map.Find("Key")->JointSequence = Fum;
+	UE_LOG(LogScript, Warning, TEXT("N:%d"), Map.Find("Key")->JointSequence.Num()); //N: 1
+	return nullptr;
+	
 	// From https://forums.unrealengine.com/t/create-new-asset-from-code-save-uobject-to-asset/328445/4?u=sf2979
 	// and https://georgy.dev/posts/save-uobject-to-package/
 	// and https://dev.epicgames.com/community/learning/knowledge-base/wzdm/unreal-engine-how-to-create-new-assets-in-c
@@ -75,7 +85,9 @@ UAnimSequence* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName,
 	UPackage* ParentPackage = CreatePackage( *ParentPath);
 	UAnimSequence* AnimSequence = NewObject<UAnimSequence>(ParentPackage, *AnimationName, RF_Public | RF_Standalone);
 	AnimSequence->SetPreviewMesh(AnimatedObject);
-	AnimSequence->SetSkeleton(AnimatedObject->GetSkeleton());
+	USkeleton* Skeleton = AnimatedObject->GetSkeleton();
+	FReferenceSkeleton RefSkeleton = Skeleton->GetReferenceSkeleton();
+	AnimSequence->SetSkeleton(Skeleton);
 	UE_LOG(LogAnimation, Error, TEXT("1"));
 	// Set skeleton (you need to do this before you add animations to it or it will throw an error)
 	AnimSequence->ResetAnimation();
@@ -117,6 +129,7 @@ UAnimSequence* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName,
 	UE_LOG(LogAnimation, Error, TEXT("3"));
 	for (TTuple<FName, FUMJointSequence> Joint : JointTracks)
 	{
+
 		FName& BoneName = Joint.Key;
 		TArray<FUMKeyFrame>& TrackData = Joint.Value.JointSequence;
 
@@ -124,7 +137,7 @@ UAnimSequence* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName,
 		RawTrack.PosKeys.Empty();
 		RawTrack.RotKeys.Empty();
 		RawTrack.ScaleKeys.Empty();
-		
+			
 		//int32 NumKeysForTrack = TrackData.Num();
 		TArray<float> TimeKeys;
 		TArray<FTransform> TransformValues;
@@ -132,9 +145,17 @@ UAnimSequence* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName,
 		{
 			//TimeKeys.Add(Time);
 			//TransformValues.Add(Transform);
-			RawTrack.PosKeys.Add(FVector3f(Transform.GetTranslation()));
+
+			
+			
+			if (BoneName.IsEqual("Bone_001")) //band-aid
+			{
+				RawTrack.PosKeys.Add(FVector3f(Transform.GetTranslation())  + FVector3f(0.675f, 0.f, 0.f));
+			} else {
+				RawTrack.PosKeys.Add(FVector3f(Transform.GetTranslation()));
+			}
 			RawTrack.RotKeys.Add(FQuat4f(Transform.GetRotation()));
-			RawTrack.ScaleKeys.Add( FVector3f(Transform.GetScale3D())); //band-aid
+			RawTrack.ScaleKeys.Add( FVector3f(Transform.GetScale3D())); 
 			
 		}
 		// FAnimationCurveIdentifier Id;
