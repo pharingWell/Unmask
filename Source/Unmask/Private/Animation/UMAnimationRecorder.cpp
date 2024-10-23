@@ -20,17 +20,17 @@ FRecorderData UUMAnimationRecorder::InitRecorderData(USkeletalMeshComponent* Com
 	return OutData;
 }
 
-void UUMAnimationRecorder::RecordFrame(FRecorderData data)
+void UUMAnimationRecorder::RecordFrame(FRecorderData Data)
 {
-	if (data.CurrentFrame % (data.Frames / data.FrameRate) == 0 && data.CurrentFrame < data.Frames)
+	if (Data.CurrentFrame % (Data.Frames / Data.FrameRate) == 0 && Data.CurrentFrame < Data.Frames)
 	{
-		TArray<FTransform> Transforms = data.Component->GetBoneSpaceTransforms();
+		TArray<FTransform> Transforms = Data.Component->GetBoneSpaceTransforms();
 		for (int i = 0; i < Transforms.Num(); i++)
 		{
-			data.Joints.Find(data.Component->GetBoneName(i))->JointSequence.Add(FUMKeyFrame(0, Transforms[i]));
+			Data.Joints.Find(Data.Component->GetBoneName(i))->JointSequence.Add(FUMKeyFrame(0, Transforms[i]));
 		}
 	}
-	data.CurrentFrame++;
+	Data.CurrentFrame++;
 }
 
 UAnimSequence* UUMAnimationRecorder::ProducePlayback(FRecorderData Data)

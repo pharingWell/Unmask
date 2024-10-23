@@ -29,8 +29,6 @@ float UUMAnimationConsumer::SequenceDifference(UAnimSequence *X, UAnimSequence *
 	FAnimationPoseData XData = FAnimationPoseData(XPose, XCurve, XAttributes);
 
 	USkeleton* YSkeleton = Y->GetSkeleton();
-	TArray<int32> YBones;
-	YSkeleton->GetChildBones(0, YBones);
 	FBoneContainer YBoneContainer = FBoneContainer(BoneIndexTypeArrayOfSize(YSkeleton->GetReferenceSkeleton().GetNum()), UE::Anim::FCurveFilterSettings(), *YSkeleton);
 	
 	FCompactPose YPose = FCompactPose();

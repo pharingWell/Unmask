@@ -29,7 +29,7 @@ class UNMASK_API UUMAnimationRecorder : public UObject
 		UFUNCTION(BlueprintCallable, Category = "Animation|Recording")
 		static FRecorderData InitRecorderData(USkeletalMeshComponent* Component, int Frames, int Framerate);
 		UFUNCTION(BlueprintCallable, Category = "Animation|Recording")
-		static void RecordFrame(FRecorderData data);
+		static void RecordFrame(FRecorderData Data);
 		UFUNCTION(BlueprintCallable, Category = "Animation|Recording")
 		static UAnimSequence* ProducePlayback(FRecorderData Data);
 };
