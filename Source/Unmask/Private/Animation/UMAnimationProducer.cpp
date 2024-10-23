@@ -29,26 +29,26 @@ bool Test_AnimationDetection::RunTest(const FString& Parameters)
 }
 
 
-UAnimSequence* UUMAnimationProducer::CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks,
+UAnimSequence* UUMAnimationProducer::CreateSequence(const TMap<FName, FUMJointSequence>& JointTracks,
                                                    USkeletalMesh* AnimatedObject)
 {
 	FMontageBlendSettings BlendInSettings(0.0f);
 	FMontageBlendSettings BlendOutSettings(0.0f);
-	return CreateMontage_WithBlendSettings(JointTracks, AnimatedObject, BlendInSettings, BlendOutSettings, 0.0f);
+	return CreateSequence_WithBlendSettings(JointTracks, AnimatedObject, BlendInSettings, BlendOutSettings, 0.0f);
 }
 
-UAnimSequence* UUMAnimationProducer::CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks,
+UAnimSequence* UUMAnimationProducer::CreateSequence(const TMap<FName, FUMJointSequence>& JointTracks,
                                                    USkeletalMesh* AnimatedObject, float BlendInTime, float BlendOutTime,
                                                    float BlendOutTriggerTime)
 {
 	FMontageBlendSettings BlendInSettings(BlendInTime);
 	FMontageBlendSettings BlendOutSettings(BlendOutTime);
-	return CreateMontage_WithBlendSettings(JointTracks, AnimatedObject, BlendInSettings, BlendOutSettings, BlendOutTriggerTime);
+	return CreateSequence_WithBlendSettings(JointTracks, AnimatedObject, BlendInSettings, BlendOutSettings, BlendOutTriggerTime);
 }
 
 // Code from https://forums.unrealengine.com/t/creating-a-uanimsequence-from-scratch-using-addkeytosequence/774856
 
-UAnimSequence* UUMAnimationProducer::CreateMontage_WithBlendSettings(TMap<FName, FUMJointSequence> JointTracks,
+UAnimSequence* UUMAnimationProducer::CreateSequence_WithBlendSettings(TMap<FName, FUMJointSequence> JointTracks,
                                                                      USkeletalMesh* AnimatedObject,
                                                                      const FMontageBlendSettings& BlendInSettings,
                                                                      const FMontageBlendSettings& BlendOutSettings,

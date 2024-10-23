@@ -15,10 +15,10 @@ class UNMASK_API UUMAnimationProducer : public UObject
 
 public:
 	UFUNCTION(BlueprintCallable)
-	static UAnimSequence* CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks, USkeletalMesh* AnimatedObject);
-	static UAnimSequence* CreateMontage(const TMap<FName, FUMJointSequence>& JointTracks, USkeletalMesh* AnimatedObject,
+	static UAnimSequence* CreateSequence(const TMap<FName, FUMJointSequence>& JointTracks, USkeletalMesh* AnimatedObject);
+	static UAnimSequence* CreateSequence(const TMap<FName, FUMJointSequence>& JointTracks, USkeletalMesh* AnimatedObject,
 	                                    float BlendInTime, float BlendOutTime, float BlendOutTriggerTime);
-	static UAnimSequence* CreateMontage_WithBlendSettings(TMap<FName, FUMJointSequence> JointTracks,
+	static UAnimSequence* CreateSequence_WithBlendSettings(TMap<FName, FUMJointSequence> JointTracks,
 	                                                      USkeletalMesh* AnimatedObject,
 	                                                      const FMontageBlendSettings& BlendInSettings,
 	                                                      const FMontageBlendSettings&
