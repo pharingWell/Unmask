@@ -2,16 +2,10 @@
 
 #include "Animation/UMAnimationProducer.h"
 #include "Animation/UMAnimationConsumer.h"
-#include "AssetToolsModule.h"
-#include "AssetViewUtils.h"
-#include "ContentBrowserModule.h"
-#include "IContentBrowserSingleton.h"
 #include "Animation/AnimationSettings.h"
 #include "Animation/BuiltInAttributeTypes.h"
 #include "AssetRegistry/AssetRegistryModule.h"
-#include "Developer/AssetTools/Private/AssetTools.h"
-#include "Factories/AnimSequenceFactory.h"
-#include "GenericPlatform/GenericPlatformOutputDevices.h"
+//#include "Developer/AssetTools/Private/AssetTools.h"
 #include "Misc/AutomationTest.h"
 #include "UObject/SavePackage.h"
 
@@ -54,12 +48,12 @@ UAnimSequence* UUMAnimationProducer::CreateSequence_WithBlendSettings(TMap<FName
                                                                      const FMontageBlendSettings& BlendOutSettings,
                                                                      float InBlendOutTriggerTime)
 {
-	
+
 	// From https://forums.unrealengine.com/t/create-new-asset-from-code-save-uobject-to-asset/328445/4?u=sf2979
 	// and https://georgy.dev/posts/save-uobject-to-package/
 	// and https://dev.epicgames.com/community/learning/knowledge-base/wzdm/unreal-engine-how-to-create-new-assets-in-c
 
-	FString SUBFOLDER = FString("UM_MVP/"); 
+	FString SUBFOLDER = FString("UM_MVP/");
 	FString PACKAGE_NAME = FString("SequencePackage");
 	FString PackageName = FString("/Game/") + SUBFOLDER + PACKAGE_NAME;
 	UE_LOG(LogScript, Warning, TEXT("Name: %s"), *PackageName);
@@ -69,7 +63,7 @@ UAnimSequence* UUMAnimationProducer::CreateSequence_WithBlendSettings(TMap<FName
 		PackageArgs.TopLevelFlags = RF_Public | RF_Standalone;
 		PackageArgs.bSlowTask = true;
 	}
-	
+
 	FString AnimationName = TEXT("Anim_") + FString::FromInt(Counter++);
 	FString const PackageFileName = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
 	FString ParentPath = FString::Printf(TEXT("%s/%s"), *FPackageName::GetLongPackagePath(FString(OuterPackage->GetName())), *AnimationName);
@@ -80,15 +74,10 @@ UAnimSequence* UUMAnimationProducer::CreateSequence_WithBlendSettings(TMap<FName
 	FReferenceSkeleton RefSkeleton = Skeleton->GetReferenceSkeleton();
 	AnimSequence->SetSkeleton(Skeleton);
 	UE_LOG(LogAnimation, Error, TEXT("1"));
-	// Set skeleton (you need to do this before you add animations to it or it will throw an error)
-	AnimSequence->ResetAnimation();
 	AnimSequence->Modify();
-	AnimSequence->ImportFileFramerate = FPS;
-	AnimSequence->ImportResampleFramerate = FPS;
-	// Notify asset registry
 	FAssetRegistryModule::AssetCreated(AnimSequence);
-
-	// Setting the framerate has to be done inside the controller.  You can't just set the variables.  
+	//FAnimationCurveData 
+	// Setting the framerate has to be done inside the controller.  You can't just set the variables.
 	// I don't know why, I just know that this is how you have to do it. Code comes from here:
 	// https://forums.unrealengine.com/t/is-there-any-way-to-modify-bone-tracks-with-c/500162/6
 	//UAnimationSequencerDataModel
@@ -116,7 +105,7 @@ UAnimSequence* UUMAnimationProducer::CreateSequence_WithBlendSettings(TMap<FName
 		Controller.NotifyPopulated();
 	}
 	Controller.CloseBracket();
-	
+
 	UE_LOG(LogAnimation, Error, TEXT("3"));
 	for (TTuple<FName, FUMJointSequence> Joint : JointTracks)
 	{
@@ -128,7 +117,7 @@ UAnimSequence* UUMAnimationProducer::CreateSequence_WithBlendSettings(TMap<FName
 		RawTrack.PosKeys.Empty();
 		RawTrack.RotKeys.Empty();
 		RawTrack.ScaleKeys.Empty();
-			
+
 		//int32 NumKeysForTrack = TrackData.Num();
 		TArray<float> TimeKeys;
 		TArray<FTransform> TransformValues;
@@ -137,8 +126,8 @@ UAnimSequence* UUMAnimationProducer::CreateSequence_WithBlendSettings(TMap<FName
 			//TimeKeys.Add(Time);
 			//TransformValues.Add(Transform);
 
-			
-			
+
+
 			if (BoneName.IsEqual("Bone_001")) //band-aid
 			{
 				RawTrack.PosKeys.Add(FVector3f(Transform.GetTranslation())  + FVector3f(0.675f, 0.f, 0.f));
@@ -146,8 +135,8 @@ UAnimSequence* UUMAnimationProducer::CreateSequence_WithBlendSettings(TMap<FName
 				RawTrack.PosKeys.Add(FVector3f(Transform.GetTranslation()));
 			}
 			RawTrack.RotKeys.Add(FQuat4f(Transform.GetRotation()));
-			RawTrack.ScaleKeys.Add( FVector3f(Transform.GetScale3D())); 
-			
+			RawTrack.ScaleKeys.Add( FVector3f(Transform.GetScale3D()));
+
 		}
 		// FAnimationCurveIdentifier Id;
 		// {

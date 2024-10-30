@@ -26,7 +26,7 @@ float UUMAnimationConsumer::SequenceDifference(UAnimSequence *X, UAnimSequence *
 
 	XPose.SetBoneContainer(&XBoneContainer);
 	FBlendedCurve XCurve = FBlendedCurve();
-	UE::Anim::FStackAttributeContainer XAttributes = UE::Anim::FStackAttributeContainer();
+	UE::Anim::FStackAttributeContainer XAttributes;
 	FAnimationPoseData XData = FAnimationPoseData(XPose, XCurve, XAttributes);
 
 	USkeleton* YSkeleton = Y->GetSkeleton();
@@ -35,18 +35,11 @@ float UUMAnimationConsumer::SequenceDifference(UAnimSequence *X, UAnimSequence *
 	FCompactPose YPose = FCompactPose();
 	YPose.SetBoneContainer(&YBoneContainer);
 	FBlendedCurve YCurve = FBlendedCurve();
-	UE::Anim::FStackAttributeContainer YAttributes = UE::Anim::FStackAttributeContainer();
+	UE::Anim::FStackAttributeContainer YAttributes;
 	FAnimationPoseData YData = FAnimationPoseData(YPose, YCurve, YAttributes);
-	
-#if WITH_EDITOR
-#define LOCTEXT_NAMESPACE "Initialize Data Model"
-	IAnimationDataController& XController = X->GetController();
-	XController.InitializeModel();
-	IAnimationDataController& YController = Y->GetController();
-	YController.InitializeModel();
-#endif
-#undef LOCTEXT
+
 	Scale = Y->GetPlayLength() / X->GetPlayLength();
+	
 	for (double t = 0; t < X->GetPlayLength(); t += Fidelity)
 	{
 		X->GetBonePose(XData, FAnimExtractContext(t));
