@@ -32,8 +32,8 @@ class UMSequenceHelper :  public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Sequencer", meta=(BlueprintThreadSafe))
-	static FUMKeyFrame MakeKeyframe(float time, FTransform transform);
+	static FUMKeyFrame MakeKeyframe(float Time, FTransform Transform);
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Sequencer", meta=(BlueprintThreadSafe))
-	static FUMJointSequence MakeJointSequence(const TArray<FUMKeyFrame>& joints);
+	static FUMJointSequence MakeJointSequence(const TArray<FUMKeyFrame>& Joints);
 };
