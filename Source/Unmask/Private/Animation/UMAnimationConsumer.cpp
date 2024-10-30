@@ -3,26 +3,27 @@
 
 #include "Animation/UMAnimationConsumer.h"
 
-TArray<FBoneIndexType> UUMAnimationConsumer::BoneIndexTypeArrayOfSize(int size)
+TArray<FBoneIndexType> UUMAnimationConsumer::BoneIndexTypeArrayOfSize(const int Size)
 {
-	TArray<FBoneIndexType> BoneIndexType;
-	for (int32 i = 0; i < size; i++)
+	TArray<FBoneIndexType> BoneIndexTypeArray;
+	for (int32 i = 0; i < Size; i++)
 	{
-		BoneIndexType.Add(i);
+		BoneIndexTypeArray.Add(i);
 	}
-	return BoneIndexType;
+	return BoneIndexTypeArray;
 }
 
-float UUMAnimationConsumer::SequenceDifference(UAnimSequence *X, UAnimSequence *Y, float Fidelity)
+float UUMAnimationConsumer::SequenceDifference(UAnimSequence *X, UAnimSequence *Y, const float Fidelity, OUT float &Scale)
 {
 	FMemMark Mark(FMemStack::Get());
 	
-	float Distance = 0;
-
+	float Difference = 0;
+	
 	USkeleton* XSkeleton = X->GetSkeleton();
 	FBoneContainer XBoneContainer = FBoneContainer(BoneIndexTypeArrayOfSize(XSkeleton->GetReferenceSkeleton().GetNum()), UE::Anim::FCurveFilterSettings(), *XSkeleton);
 	
 	FCompactPose XPose = FCompactPose();
+
 	XPose.SetBoneContainer(&XBoneContainer);
 	FBlendedCurve XCurve = FBlendedCurve();
 	UE::Anim::FStackAttributeContainer XAttributes = UE::Anim::FStackAttributeContainer();
@@ -45,11 +46,11 @@ float UUMAnimationConsumer::SequenceDifference(UAnimSequence *X, UAnimSequence *
 	YController.InitializeModel();
 #endif
 #undef LOCTEXT
-	
-	for (double t = 0; t < std::max(X->GetPlayLength(), Y->GetPlayLength()); t += Fidelity)
+	Scale = Y->GetPlayLength() / X->GetPlayLength();
+	for (double t = 0; t < X->GetPlayLength(); t += Fidelity)
 	{
 		X->GetBonePose(XData, FAnimExtractContext(t));
-		Y->GetBonePose(YData, FAnimExtractContext(t));
+		Y->GetBonePose(YData, FAnimExtractContext(t * Scale));
 		
 		TArray<FTransform> XBonePoses = reinterpret_cast<const TArray<FTransform>&>(XPose.GetBones());
 		TArray<FTransform> YBonePoses = reinterpret_cast<const TArray<FTransform>&>(YPose.GetBones());
@@ -58,9 +59,9 @@ float UUMAnimationConsumer::SequenceDifference(UAnimSequence *X, UAnimSequence *
 		{
 			FRotator XRotator = XBonePoses[j].Rotator();
 			FRotator YRotator = YBonePoses[j].Rotator();
-			Distance += Fidelity*sqrt(pow(XRotator.Pitch-YRotator.Pitch, 2) + pow(XRotator.Roll-YRotator.Roll, 2) + pow(XRotator.Yaw-YRotator.Yaw, 2));
+			Difference += Fidelity*sqrt(pow(XRotator.Pitch-YRotator.Pitch, 2) + pow(XRotator.Roll-YRotator.Roll, 2) + pow(XRotator.Yaw-YRotator.Yaw, 2));
 		}
 	}
 	Mark.Pop();
-	return Distance;
+	return Difference;
 }
