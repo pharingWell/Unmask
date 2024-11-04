@@ -4,9 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "UMCueTree.generated.h"
 #include "Animation/UMSequenceStructs.h"
 #include "Animation/UMAnimationProducer.h"
+#include "UMCueTree.generated.h"
 
 USTRUCT(Blueprintable, BlueprintType)
 struct FCueTreeNode
@@ -42,13 +42,15 @@ class UNMASK_API UUMCueTree : public UObject
 		TArray<FCueTreeNode> Nodes;
 		UPROPERTY()
 		USkeletalMesh *SkeletalMesh;
+		UPROPERTY()
+		TMap<FName, FBoneRotatorRange> Ranges;
 		UFUNCTION()
-		UAnimSequence *UUMCueTree::GenerateAnimation(USkeletalMesh *SkeletalMesh, const TMap<FName, FBoneRotatorRange> *Ranges, const int Frames, const float PlayLength);
-	
+		UAnimSequence *GenerateAnimation(const int Frames, const float PlayLength);
+
+	UUMCueTree();
+	UUMCueTree(USkeletalMesh *SkeletalMesh, const TMap<FName, FBoneRotatorRange> Ranges, const int AvgChildren, const int MinDepth, const int MaxDepth, const int Frames, const float PlayLength);
 	UFUNCTION(BlueprintCallable, Category = "CueTree")
-	UUMCueTree::UUMCueTree(USkeletalMesh *SkeletalMesh, const TMap<FName, FBoneRotatorRange> *Ranges, const int AvgChildren, const int MinDepth, const int MaxDepth, const int Frames, const float PlayLength);
-	UFUNCTION(BlueprintCallable, Category = "CueTree")
-	FCueTreeNode *GetRoot();
+	FCueTreeNode GetRoot();
 	UFUNCTION(BlueprintCallable, Category = "CueTree")
 	static float RandInRange(float Min, float Max);
 };

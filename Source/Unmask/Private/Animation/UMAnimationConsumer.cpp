@@ -23,7 +23,6 @@ float UUMAnimationConsumer::SequenceDifference(UAnimSequence *X, UAnimSequence *
 	FBoneContainer XBoneContainer = FBoneContainer(BoneIndexTypeArrayOfSize(XSkeleton->GetReferenceSkeleton().GetNum()), UE::Anim::FCurveFilterSettings(), *XSkeleton);
 	
 	FCompactPose XPose = FCompactPose();
-
 	XPose.SetBoneContainer(&XBoneContainer);
 	FBlendedCurve XCurve = FBlendedCurve();
 	UE::Anim::FStackAttributeContainer XAttributes;

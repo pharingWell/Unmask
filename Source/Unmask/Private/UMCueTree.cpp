@@ -4,21 +4,27 @@
 
 #include <random>
 
-float UUMCueTree::RandInRange(const float Min, const float Max)
+float UUMCueTree::RandInRange(float Min, float Max)
 {
-	return ((rand() % 100) / 100.0f * (Max - Min) + Min);
+	return FMath::FRand() * (Max - Min) + Min;
 }
 
-FCueTreeNode *UUMCueTree::GetRoot()
+FCueTreeNode UUMCueTree::GetRoot()
 {
-	return &(this->Nodes[0]);
+	return this->Nodes[0];
 }
 
-UUMCueTree::UUMCueTree(USkeletalMesh *SkeletalMesh, const TMap<FName, FBoneRotatorRange> *Ranges, const int AvgChildren, const int MinDepth, const int MaxDepth, const int Frames, const float PlayLength)
+UUMCueTree::UUMCueTree()
 {
+	this->Ranges = TMap<FName, FBoneRotatorRange>();
+	USkeletalMesh Mesh;
+	this->SkeletalMesh = &Mesh;
+}
+
+UUMCueTree::UUMCueTree(USkeletalMesh *SkeletalMesh, const TMap<FName, FBoneRotatorRange> Ranges, const int AvgChildren, const int MinDepth, const int MaxDepth, const int Frames, const float PlayLength)
+{
+	this->Ranges = Ranges;
 	this->SkeletalMesh = SkeletalMesh;
-	std::default_random_engine Generator;
-	std::normal_distribution<int> Distribution(AvgChildren, AvgChildren / 3.0);
 	TQueue<int> ToBeExpanded;
 	FCueTreeNode Root;
 	Root.Depth = 0;
@@ -29,13 +35,13 @@ UUMCueTree::UUMCueTree(USkeletalMesh *SkeletalMesh, const TMap<FName, FBoneRotat
 		int ParentNodeIndex;
 		ToBeExpanded.Dequeue(ParentNodeIndex);
 		if (Nodes[ParentNodeIndex].Depth >= MaxDepth) continue;
-		int ChildrenCount = Distribution(Generator);
+		int ChildrenCount = FMath::RandRange(0, 2 * AvgChildren);
 		if (ChildrenCount < 1 and Nodes[ParentNodeIndex].Depth < MinDepth) ChildrenCount = 1;
 		for (int i = 0; i < ChildrenCount; i++)
 		{
 			FCueTreeNode ChildNode;
 			ChildNode.Depth = Nodes[ParentNodeIndex].Depth + 1;
-			ChildNode.Animation = GenerateAnimation(SkeletalMesh, Ranges, Frames, PlayLength);
+			ChildNode.Animation = GenerateAnimation(Frames, PlayLength);
 			int ChildNodeIndex = Nodes.Add(ChildNode);
 			Nodes[ParentNodeIndex].Children.Add(ChildNodeIndex);
 			ToBeExpanded.Enqueue(ChildNodeIndex);
@@ -43,39 +49,39 @@ UUMCueTree::UUMCueTree(USkeletalMesh *SkeletalMesh, const TMap<FName, FBoneRotat
 	}
 }
 
-UAnimSequence *UUMCueTree::GenerateAnimation(USkeletalMesh *SkeletalMesh, const TMap<FName, FBoneRotatorRange> *Ranges, const int Frames, const float PlayLength)
+UAnimSequence *UUMCueTree::GenerateAnimation(const int Frames, const float PlayLength)
 {
 	float DeltaTime = PlayLength / Frames;
 	TMap<FName, FUMJointSequence> Joints;
 	
-	for (TTuple<FName, FBoneRotatorRange> Range : Ranges)
+	for (TTuple<FName, FBoneRotatorRange> Range : this->Ranges)
 	{
 		FUMJointSequence JointSequence;
-		const int Index = SkeletalMesh->GetSkeleton()->GetReferenceSkeleton().FindBoneIndex(Range.Key);
-		JointSequence.JointSequence.Add(FUMKeyFrame(0, SkeletalMesh->GetSkeleton()->GetReferenceSkeleton().GetRefBonePose()[Index]));
+		const int Index = this->SkeletalMesh->GetSkeleton()->GetReferenceSkeleton().FindBoneIndex(Range.Key);
+		JointSequence.JointSequence.Add(FUMKeyFrame(0, this->SkeletalMesh->GetSkeleton()->GetReferenceSkeleton().GetRefBonePose()[Index]));
 		Joints.Add(Range.Key, JointSequence);
 	}
 	
 	for (int T = 1; T < Frames; T++)
 	{
-		for (TTuple<FName, FBoneRotatorRange> Range : Ranges)
+		for (TTuple<FName, FBoneRotatorRange> Range : this->Ranges)
 		{
 			FRotator Max = Range.Value.RotatorMax;
 			FRotator Min = Range.Value.RotatorMin;
 			
-			const float MaxPitchMovement = DeltaTime * (Max.Pitch() - Min.Pitch());
-			const float MaxRollMovement = DeltaTime * (Max.Roll() - Min.Roll());
-			const float MaxYawMovement = DeltaTime * (Max.Yaw() - Min.Yaw());
+			float MaxPitchMovement = DeltaTime * (Max.Pitch - Min.Pitch);
+			float MaxRollMovement = DeltaTime * (Max.Roll - Min.Roll);
+			float MaxYawMovement = DeltaTime * (Max.Yaw - Min.Yaw);
 
 			FRotator LastPose = FRotator(Joints.Find(Range.Key)->JointSequence.Last().Transform.Rotator());
 
-			const float NewJointPitch = std::min(Max.Pitch(), std::max(Min.Pitch(), RandInRange(-1, 1) * MaxPitchMovement + LastPose.Pitch()));
-			const float NewJointRoll = std::min(Max.Roll(), std::max(Min.Roll(), RandInRange(-1, 1) * MaxRollMovement + LastPose.Roll()));
-			const float NewJointYaw = std::min(Max.Yaw(), std::max(Min.Yaw(), RandInRange(-1, 1) * MaxYawMovement + LastPose.Yaw()));
+			float NewJointPitch = FMath::Clamp(RandInRange(-1, 1) * MaxPitchMovement + LastPose.Pitch, Min.Pitch, Max.Pitch);
+			float NewJointRoll = FMath::Clamp(RandInRange(-1, 1) * MaxRollMovement + LastPose.Roll, Min.Roll, Max.Roll);
+			float NewJointYaw = FMath::Clamp(RandInRange(-1, 1) * MaxYawMovement + LastPose.Yaw, Min.Yaw, Max.Yaw);
 			
 			Joints.Find(Range.Key)->JointSequence.Add(FUMKeyFrame(T * DeltaTime, FTransform(FRotator(NewJointPitch, NewJointYaw, NewJointRoll))));
 		}
 	}
 
-	return UUMAnimationProducer::CreateSequence(Joints, SkeletalMesh);
+	return UUMAnimationProducer::CreateSequence(Joints, this->SkeletalMesh);
 }
