@@ -2,11 +2,21 @@
 
 #include "UMCueTree.h"
 
-#include <random>
-
 float UUMCueTree::RandInRange(float Min, float Max)
 {
 	return FMath::FRand() * (Max - Min) + Min;
+}
+
+UUMCueTree* UUMCueTree::CreateMVPTree(USkeletalMesh* Mesh)
+{
+	TMap<FName, FBoneRotatorRange> Ranges;
+	Ranges.Add(FName("upperarm_r"), FBoneRotatorRange(FRotator(-90, 0, 0), FRotator(90, 0, 0)));
+	Ranges.Add(FName("lowerarm_r"), FBoneRotatorRange(FRotator(0, 0, -90), FRotator(180, 0, 90)));
+	Ranges.Add(FName("hand_r"), FBoneRotatorRange(FRotator(-90, -90, -90), FRotator(90, 90, 90)));
+	
+	UUMCueTree* Tree = NewObject<UUMCueTree>();
+	Tree->InitCueTree(Mesh, Ranges, 1, 1, 3, 27, 1);
+	return Tree;
 }
 
 FCueTreeNode UUMCueTree::GetRoot()
@@ -20,10 +30,10 @@ UUMCueTree::UUMCueTree()
 	this->SkeletalMesh = nullptr;
 }
 
-UUMCueTree::UUMCueTree(USkeletalMesh *SkeletalMesh, const TMap<FName, FBoneRotatorRange> Ranges, const int AvgChildren, const int MinDepth, const int MaxDepth, const int Frames, const float PlayLength)
+void UUMCueTree::InitCueTree(USkeletalMesh *InitSkeletalMesh, const TMap<FName, FBoneRotatorRange> InitRanges, const int AvgChildren, const int MinDepth, const int MaxDepth, const int Frames, const float PlayLength)
 {
-	this->Ranges = Ranges;
-	this->SkeletalMesh = SkeletalMesh;
+	this->Ranges = InitRanges;
+	this->SkeletalMesh = InitSkeletalMesh;
 	TQueue<int> ToBeExpanded;
 	FCueTreeNode Root;
 	Root.Depth = 0;

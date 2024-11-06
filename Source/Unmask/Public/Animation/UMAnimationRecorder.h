@@ -32,4 +32,6 @@ class UNMASK_API UUMAnimationRecorder : public UObject
 		static void RecordFrame(FRecorderData Data);
 		UFUNCTION(BlueprintCallable, Category = "Animation|Recording")
 		static UAnimSequence* ProducePlayback(FRecorderData Data);
+		UFUNCTION(BlueprintCallable, Category = "Animation|Recording")
+		static TMap<FName, FUMJointSequence> GetJoints(FRecorderData Data) { return Data.Joints; }
 };

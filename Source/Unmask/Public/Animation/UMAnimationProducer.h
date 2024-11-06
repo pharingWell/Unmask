@@ -25,5 +25,4 @@ public:
 	                                                      const FMontageBlendSettings&
 	                                                      BlendOutSettings, float InBlendOutTriggerTime);
 
-	
 };

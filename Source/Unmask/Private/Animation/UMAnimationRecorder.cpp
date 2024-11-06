@@ -22,6 +22,7 @@ FRecorderData UUMAnimationRecorder::InitRecorderData(USkeletalMeshComponent* Com
 
 void UUMAnimationRecorder::RecordFrame(FRecorderData Data)
 {
+	if (Data.FrameRate == 0) return;
 	if (Data.CurrentFrame % (Data.Frames / Data.FrameRate) == 0 && Data.CurrentFrame < Data.Frames)
 	{
 		TArray<FTransform> Transforms = Data.Component->GetBoneSpaceTransforms();

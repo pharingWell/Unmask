@@ -32,7 +32,7 @@ struct FBoneRotatorRange
 	FRotator RotatorMax;
 };
 
-UCLASS()
+UCLASS(Blueprintable)
 class UNMASK_API UUMCueTree : public UObject
 {
 	GENERATED_BODY()
@@ -47,10 +47,14 @@ class UNMASK_API UUMCueTree : public UObject
 		UFUNCTION()
 		UAnimSequence *GenerateAnimation(const int Frames, const float PlayLength);
 
-	UUMCueTree();
-	UUMCueTree(USkeletalMesh *SkeletalMesh, const TMap<FName, FBoneRotatorRange> Ranges, const int AvgChildren, const int MinDepth, const int MaxDepth, const int Frames, const float PlayLength);
+	public:
+		UUMCueTree();
+		void InitCueTree(USkeletalMesh *InitSkeletalMesh, const TMap<FName, FBoneRotatorRange> InitRanges, const int AvgChildren, const int MinDepth, const int MaxDepth, const int Frames, const float PlayLength);
+
 	UFUNCTION(BlueprintCallable, Category = "CueTree")
 	FCueTreeNode GetRoot();
 	UFUNCTION(BlueprintCallable, Category = "CueTree")
 	static float RandInRange(float Min, float Max);
+	UFUNCTION(BlueprintCallable, Category = "CueTree")
+	static UUMCueTree *CreateMVPTree(USkeletalMesh *Mesh);
 };
