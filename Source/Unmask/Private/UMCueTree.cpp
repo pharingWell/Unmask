@@ -17,8 +17,7 @@ FCueTreeNode UUMCueTree::GetRoot()
 UUMCueTree::UUMCueTree()
 {
 	this->Ranges = TMap<FName, FBoneRotatorRange>();
-	USkeletalMesh Mesh;
-	this->SkeletalMesh = &Mesh;
+	this->SkeletalMesh = nullptr;
 }
 
 UUMCueTree::UUMCueTree(USkeletalMesh *SkeletalMesh, const TMap<FName, FBoneRotatorRange> Ranges, const int AvgChildren, const int MinDepth, const int MaxDepth, const int Frames, const float PlayLength)
