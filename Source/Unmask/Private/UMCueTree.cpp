@@ -35,7 +35,7 @@ UUMCueTree::UUMCueTree(USkeletalMesh *SkeletalMesh, const TMap<FName, FBoneRotat
 		int ParentNodeIndex;
 		ToBeExpanded.Dequeue(ParentNodeIndex);
 		if (Nodes[ParentNodeIndex].Depth >= MaxDepth) continue;
-		int ChildrenCount = FMath::RandRange(0, 2 * AvgChildren);
+		int ChildrenCount = FMath::RandRange(0, 2 * AvgChildren); // make this a normal distribution
 		if (ChildrenCount < 1 and Nodes[ParentNodeIndex].Depth < MinDepth) ChildrenCount = 1;
 		for (int i = 0; i < ChildrenCount; i++)
 		{
@@ -66,18 +66,18 @@ UAnimSequence *UUMCueTree::GenerateAnimation(const int Frames, const float PlayL
 	{
 		for (TTuple<FName, FBoneRotatorRange> Range : this->Ranges)
 		{
-			FRotator Max = Range.Value.RotatorMax;
-			FRotator Min = Range.Value.RotatorMin;
+			const FRotator Max = Range.Value.RotatorMax;
+			const FRotator Min = Range.Value.RotatorMin;
 			
-			float MaxPitchMovement = DeltaTime * (Max.Pitch - Min.Pitch);
-			float MaxRollMovement = DeltaTime * (Max.Roll - Min.Roll);
-			float MaxYawMovement = DeltaTime * (Max.Yaw - Min.Yaw);
+			const float MaxPitchMovement = DeltaTime * (Max.Pitch - Min.Pitch);
+			const float MaxRollMovement = DeltaTime * (Max.Roll - Min.Roll);
+			const float MaxYawMovement = DeltaTime * (Max.Yaw - Min.Yaw);
 
-			FRotator LastPose = FRotator(Joints.Find(Range.Key)->JointSequence.Last().Transform.Rotator());
+			const FRotator LastPose = FRotator(Joints.Find(Range.Key)->JointSequence.Last().Transform.Rotator());
 
-			float NewJointPitch = FMath::Clamp(RandInRange(-1, 1) * MaxPitchMovement + LastPose.Pitch, Min.Pitch, Max.Pitch);
-			float NewJointRoll = FMath::Clamp(RandInRange(-1, 1) * MaxRollMovement + LastPose.Roll, Min.Roll, Max.Roll);
-			float NewJointYaw = FMath::Clamp(RandInRange(-1, 1) * MaxYawMovement + LastPose.Yaw, Min.Yaw, Max.Yaw);
+			const float NewJointPitch = FMath::Clamp(RandInRange(-1, 1) * MaxPitchMovement + LastPose.Pitch, Min.Pitch, Max.Pitch);
+			const float NewJointRoll = FMath::Clamp(RandInRange(-1, 1) * MaxRollMovement + LastPose.Roll, Min.Roll, Max.Roll);
+			const float NewJointYaw = FMath::Clamp(RandInRange(-1, 1) * MaxYawMovement + LastPose.Yaw, Min.Yaw, Max.Yaw);
 			
 			Joints.Find(Range.Key)->JointSequence.Add(FUMKeyFrame(T * DeltaTime, FTransform(FRotator(NewJointPitch, NewJointYaw, NewJointRoll))));
 		}
