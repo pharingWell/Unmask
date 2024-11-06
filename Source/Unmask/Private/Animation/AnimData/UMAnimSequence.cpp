@@ -11,13 +11,18 @@ void UUMAnimSequence::CorrectModel()
 {
 	checkf(Controller, TEXT("Failed to create AnimationDataController"));
 	UClass* TargetClass = UUMAnimDataModel::StaticClass();
-	UObject* ClassDataModel = NewObject<UObject>(this, TargetClass, TargetClass->GetFName());
+	UObject* ClassDataModel = NewObject<UObject>(this, TargetClass, TargetClass->GetFName()); //Based off of AnimSequenceBase's Create Model
 	DataModelInterface = ClassDataModel;
-	UUMAnimDataController *ControllerObj = NewObject<UUMAnimDataController>(GetTransientPackage());
-	Controller = TScriptInterface<UUMAnimDataController>(ControllerObj);
-	Controller->SetModel(DataModelInterface);
-	ensureAlways(Controller->GetModelInterface() == DataModelInterface);
 	BindToModelModificationEvent();
+	if(!bModelCorrected)
+	{
+		UUMAnimDataController *ControllerObj = NewObject<UUMAnimDataController>(GetTransientPackage());
+		Controller = TScriptInterface<UUMAnimDataController>(ControllerObj);
+		Controller->SetModel(DataModelInterface);
+		bModelCorrected = true;
+	}
+	ensureAlways(Controller->GetModelInterface() == DataModelInterface);
+	
 	if (USkeleton* MySkeleton = GetSkeleton()) //PreloadSkeleton
 	{
 		if (FLinkerLoad* SkeletonLinker = MySkeleton->GetLinker())
@@ -29,7 +34,7 @@ void UUMAnimSequence::CorrectModel()
 	{
 		UE_LOG(LogScript, Error, TEXT("Where me bones???"))
 	}
-	bModelCorrected = true;
+		
 	
 }
 
