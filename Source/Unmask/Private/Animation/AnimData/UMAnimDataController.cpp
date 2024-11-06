@@ -2126,3 +2126,13 @@ void UUMAnimDataController::PopulateWithExistingModel(TScriptInterface<IAnimatio
 	Model->CurveData = InModel->GetCurveData();
 	Model->AnimatedBoneAttributes = InModel->GetAttributes();
 }
+
+void UUMAnimDataController::InitializeModel()
+{
+	if (const UAnimSequence* AnimSequence = Model->GetAnimationSequence())
+	{
+
+	}
+				
+				
+}

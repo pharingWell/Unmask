@@ -14,11 +14,11 @@ struct FCueTreeNode
 	GENERATED_BODY()
 	
 	UPROPERTY(Blueprintable, BlueprintReadOnly)
-	UAnimSequence *Animation;
+	UAnimSequence *Animation {nullptr};
 	UPROPERTY(Blueprintable, BlueprintReadOnly)
 	TArray<int> Children;
 	UPROPERTY(Blueprintable, BlueprintReadOnly)
-	int Depth;
+	int Depth {-1};
 };
 
 USTRUCT(BlueprintType, BlueprintType)
@@ -27,9 +27,9 @@ struct FBoneRotatorRange
 	GENERATED_BODY()
 
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
-	FRotator RotatorMin;
+	FRotator RotatorMin {FRotator()};
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
-	FRotator RotatorMax;
+	FRotator RotatorMax {FRotator()};
 };
 
 UCLASS()

@@ -91,7 +91,7 @@ public:
 	virtual bool DuplicateAttribute(const FAnimationAttributeIdentifier& AttributeIdentifier, const FAnimationAttributeIdentifier& NewAttributeIdentifier, bool bShouldTransact = true) override;
 	virtual void UpdateWithSkeleton(USkeleton* TargetSkeleton, bool bShouldTransact = true) override;
 	virtual void PopulateWithExistingModel(TScriptInterface<IAnimationDataModel> InModel) override;
-	virtual void InitializeModel() override {}
+	virtual void InitializeModel() override;
 protected:
 	virtual void NotifyBracketOpen() override;
 	virtual void NotifyBracketClosed() override;

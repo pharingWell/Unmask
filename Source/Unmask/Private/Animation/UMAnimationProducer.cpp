@@ -9,6 +9,7 @@
 #include "ComponentReregisterContext.h"
 #include "Animation/AnimData/UMAnimDataController.h"
 #include "Animation/AnimData/UMAnimDataModel.h"
+#include "Animation/AnimData/UMAnimSequence.h"
 #include "Misc/AutomationTest.h"
 #include "UObject/SavePackage.h"
 
@@ -40,20 +41,18 @@ UAnimSequence* UUMAnimationProducer::CreateSequence(const TMap<FName, FUMJointSe
 			} else {
 	ParentPackage = CreatePackage(*ParentPath);
 	}
-	UObject* Object = LoadObject<UObject>(ParentPackage, *SequenceName, NULL, LOAD_None, NULL);
-	UAnimSequence *DestSeq = Cast<UAnimSequence>(Object);
-	
+	UObject* Object = LoadObject<UObject>(ParentPackage, *SequenceName, NULL, LOAD_NoWarn, NULL);
+	UUMAnimSequence *DestSeq = Cast<UUMAnimSequence>(Object);
 	// If not, create new one now.
 	if (!DestSeq)
 	{
-	DestSeq = NewObject<UAnimSequence>(ParentPackage, *SequenceName, RF_Public | RF_Standalone);
-	// Notify the asset registry
-	FAssetRegistryModule::AssetCreated(DestSeq);
+		DestSeq = NewObject<UUMAnimSequence>(ParentPackage, *SequenceName, RF_Public | RF_Standalone);
+		// Notify the asset registry
+		FAssetRegistryModule::AssetCreated(DestSeq);
 	}
 	DestSeq->SetSkeleton(AnimatedObject->GetSkeleton());
-	IAnimationDataController& Controller = DestSeq->GetController(); // LETS GOOO (Sets to custom DataController)
-	Controller.RemoveAllBoneTracks(false);
-
+	UUMAnimDataController& UUMController = dynamic_cast<UUMAnimDataController&>(DestSeq->GetUMController()); // LETS GOOO (Sets to custom DataController
+	UUMController.RemoveAllBoneTracks(false);
 	// set frame rate
 	int32 ResampleRate = 24;
 	int32 SequenceLength = 1;
@@ -62,9 +61,9 @@ UAnimSequence* UUMAnimationProducer::CreateSequence(const TMap<FName, FUMJointSe
 		SequenceLength = FGenericPlatformMath::Max<int32>(SequenceLength, Joint.Value.JointSequence.Last().Time);
 	}
 	const FFrameRate ResampleFrameRate(ResampleRate, 1);
-	Controller.SetFrameRate(ResampleFrameRate, false);
+	UUMController.SetFrameRate(ResampleFrameRate, false);
 	const FFrameNumber NumberOfFrames = ResampleFrameRate.AsFrameNumber(SequenceLength);
-	Controller.SetNumberOfFrames(FGenericPlatformMath::Max<int32>(NumberOfFrames.Value, 1), false);
+	UUMController.SetNumberOfFrames(FGenericPlatformMath::Max<int32>(NumberOfFrames.Value, 1), false);
 
 	// import blend shape curves
 	//
@@ -74,15 +73,20 @@ UAnimSequence* UUMAnimationProducer::CreateSequence(const TMap<FName, FUMJointSe
 	{
 		FName &BoneName = Joint.Key;
 		TArray<FUMKeyFrame> &JointSequence = Joint.Value.JointSequence;
-		const FAnimationCurveIdentifier CurveId(FName(BoneName.ToString() + TEXT("_Curve")), ERawCurveTrackTypes::RCT_Transform);
-		Controller.AddCurve(CurveId, EAnimAssetCurveFlags::AACF_NONE, false);
-		UUMAnimDataController& UUMController = dynamic_cast<UUMAnimDataController&>(Controller);
-		UUMController.SetTransformCurveKeys(CurveId, JointSequence);
-		// Reregister skeletal mesh components so they reflect the updated animation
-		for (TObjectIterator<USkeletalMeshComponent> Iter; Iter; ++Iter)
+		
+		for (auto &Keyframe : JointSequence)
 		{
-	  		FComponentReregisterContext ReregisterContext(*Iter);
+			FTransform& Transform = Keyframe.Transform;
+			Transform.NormalizeRotation();
 		}
+		const FAnimationCurveIdentifier CurveId(FName(BoneName.ToString() + TEXT("_Curve")), ERawCurveTrackTypes::RCT_Transform);
+		UUMController.AddCurve(CurveId, EAnimAssetCurveFlags::AACF_NONE, false);
+		UUMController.SetTransformCurveKeys(CurveId, JointSequence);
+	}
+	// Reregister skeletal mesh components so they reflect the updated animation
+	for (TObjectIterator<USkeletalMeshComponent> Iter; Iter; ++Iter)
+	{
+		FComponentReregisterContext ReregisterContext(*Iter);
 	}
 	return DestSeq;
 }

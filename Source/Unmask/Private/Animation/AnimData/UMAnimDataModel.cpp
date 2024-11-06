@@ -195,6 +195,7 @@ int32 UUMAnimDataModel::GetNumBoneTracks() const
 
 UAnimSequence* UUMAnimDataModel::GetAnimationSequence() const
 {
+	UE_LOG(LogScript, Error, TEXT("Get animation sequence"))
 	UObject* AnimObject = static_cast<UObject*>(FindObjectWithOuter(GetOuter(), UAnimSequence::StaticClass()));
 	return CastChecked<UAnimSequence>(AnimObject ? AnimObject : GetOuter());
 }
@@ -625,7 +626,6 @@ FGuid UUMAnimDataModel::GenerateGuid() const
 
 TScriptInterface<IAnimationDataController> UUMAnimDataModel::GetController()
 {
-	
 	UUMAnimDataController* Controller = NewObject<UUMAnimDataController>(GetTransientPackage());
 	Controller->SetModel(this);
 	return Controller;

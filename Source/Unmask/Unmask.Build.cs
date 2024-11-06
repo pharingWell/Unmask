@@ -6,7 +6,7 @@ public class Unmask : ModuleRules
 {
 	public Unmask(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PrivateDependencyModuleNames.AddRange(new string[] { "AIModule", "Niagara" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "AIModule", "Niagara", "AnimationData" });
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
