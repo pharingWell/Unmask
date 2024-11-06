@@ -6,6 +6,7 @@
 #include "Animation/BuiltInAttributeTypes.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 //#include "Developer/AssetTools/Private/AssetTools.h"
+#include "Animation/AnimData/UMAnimDataModel.h"
 #include "Misc/AutomationTest.h"
 #include "UObject/SavePackage.h"
 
@@ -67,8 +68,58 @@ UAnimSequence* UUMAnimationProducer::CreateSequence_WithBlendSettings(TMap<FName
 	FString AnimationName = TEXT("Anim_") + FString::FromInt(Counter++);
 	FString const PackageFileName = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
 	FString ParentPath = FString::Printf(TEXT("%s/%s"), *FPackageName::GetLongPackagePath(FString(OuterPackage->GetName())), *AnimationName);
+
+	
+	
 	UPackage* ParentPackage = CreatePackage( *ParentPath);
 	UAnimSequence* AnimSequence = NewObject<UAnimSequence>(ParentPackage, *AnimationName, RF_Public | RF_Standalone);
+	UObject* ClassDataModel = NewObject<UObject>(AnimSequence, UUMAnimDataModel::StaticClass(), UUMAnimDataModel::StaticClass()->GetFName());
+	
+	
+	
+	//DataModelInterface->GetModifiedEvent().AddUObject(this, &UAnimSequenceBase::OnModelModified);
+
+	/*
+	FString 	ParentPath = FString::Printf(TEXT("%s/%s"), *FPackageName::GetLongPackagePath(*Outer->GetName()), *SequenceName);
+	UObject* 	ParentPackage = CreatePackage( *ParentPath);
+	UObject* Object = LoadObject<UObject>(ParentPackage, *SequenceName, nullptr, (LOAD_Quiet | LOAD_NoWarn), nullptr);
+	UAnimSequence * DestSeq = Cast<UAnimSequence>(Object);
+	// if object with same name exists, warn user
+	if (Object && !DestSeq)
+	{
+	AddTokenizedErrorMessage(FTokenizedMessage::Create(EMessageSeverity::Error, LOCTEXT("Error_AssetExist", "Asset with same name exists. Can't overwrite another asset")), FFbxErrors::Generic_SameNameAssetExists);
+	continue; // Move on to next sequence...
+	}
+
+	// If not, create new one now.
+
+	const bool bCreateAsset = !DestSeq;
+	if(bCreateAsset)
+	{
+	DestSeq = NewObject<UAnimSequence>(ParentPackage, *SequenceName, RF_Public | RF_Standalone);
+	CreatedObjects.Add(DestSeq);
+	}
+
+	DestSeq->SetSkeleton(Skeleton);
+
+	// since to know full path, reimport will need to do same
+	UFbxAnimSequenceImportData* ImportData = UFbxAnimSequenceImportData::GetImportDataForAnimSequence(DestSeq, TemplateImportData);
+	ImportData->Update(UFactory::GetCurrentFilename(), &Md5Hash);
+	ImportData->SourceAnimationName = SourceAnimationName;
+	DestSeq->ImportFileFramerate = GetOriginalFbxFramerate();
+	DestSeq->ImportResampleFramerate = ResampleRate;
+
+	DestSeq->GetController().InitializeModel();
+
+	ImportAnimation(Skeleton, DestSeq, Name, SortedLinks, NodeArray, CurAnimStack, ResampleRate, AnimTimeSpan, false);
+
+	if (bCreateAsset)
+	{			
+	// Notify the asset registry
+	FAssetRegistryModule::AssetCreated(DestSeq);
+	}
+	*/
+	
 	AnimSequence->SetPreviewMesh(AnimatedObject);
 	USkeleton* Skeleton = AnimatedObject->GetSkeleton();
 	FReferenceSkeleton RefSkeleton = Skeleton->GetReferenceSkeleton();
@@ -92,6 +143,8 @@ UAnimSequence* UUMAnimationProducer::CreateSequence_WithBlendSettings(TMap<FName
 			PlayLength = FMath::Max( PlayLength, Joint.Value.JointSequence.Last().Time); //the time of the last keyframe in the JointTracks's JointSequence
 		}
 	}
+	
+	
 	// Initialize data model
 	// https://docs.unrealengine.com/5.0/en-US/API/Developer/AnimationDataController/UAnimDataController/
 	IAnimationDataController& Controller = AnimSequence->GetController();

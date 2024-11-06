@@ -10,13 +10,6 @@ void UUMAnimDataController::OpenBracket(const FText& InTitle, bool bShouldTransa
 {
 	ValidateModel();
 
-	if (UE::FChangeTransactor::CanTransactChanges() && !ChangeTransactor.IsTransactionPending() && bShouldTransact)
-	{
-		ChangeTransactor.OpenTransaction(InTitle);
-
-		// ConditionalAction<UE::Anim::FCloseBracketAction>(bShouldTransact, InTitle.ToString());
-	}
-
 	if (BracketDepth == 0)
 	{
 		FBracketPayload Payload;
@@ -42,15 +35,6 @@ void UUMAnimDataController::CloseBracket(bool bShouldTransact /*= true*/)
 
 	if (BracketDepth == 0)
 	{
-		if (UE::FChangeTransactor::CanTransactChanges() && bShouldTransact)
-		{
-			ensure(ChangeTransactor.IsTransactionPending());
-
-			ConditionalAction<UE::Anim::FOpenBracketAction>(bShouldTransact, TEXT("Open Bracket"));
-
-			ChangeTransactor.CloseTransaction();
-		}
-		
 		Model->GetNotifier().Notify(EAnimDataModelNotifyType::BracketClosed);
 	}
 }
@@ -66,9 +50,8 @@ void UUMAnimDataController::SetModel(TScriptInterface<IAnimationDataModel> InMod
 	}
 
 	ModelInterface = InModel;
-	Model = CastChecked<UAnimDataModel>(InModel.GetObject(), ECastCheckedType::NullAllowed);
+	Model = CastChecked<UUMAnimDataModel>(InModel.GetObject(), ECastCheckedType::NullAllowed);
 	
-	ChangeTransactor.SetTransactionObject(Model.Get());
 }
 
 
@@ -263,7 +246,7 @@ bool UUMAnimDataController::RemoveBoneTracksMissingFromSkeleton(const USkeleton*
 			{				
 				// Remove track
 				TracksToBeRemoved.Add(Track.Name);
-				Reportf(ELogVerbosity::Display, TEXT("InvalidBoneIndexWarning: Unable to find bone index, animation track will be removed: %s"), ToCStr(Track.Name.ToString()));				
+				UE_LOG(LogScript, Display, TEXT("InvalidBoneIndexWarning: Unable to find bone index, animation track will be removed: %s"), ToCStr(Track.Name.ToString()));				
 			}			
 		}
 

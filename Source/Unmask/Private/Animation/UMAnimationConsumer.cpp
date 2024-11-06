@@ -18,18 +18,33 @@ float UUMAnimationConsumer::SequenceDifference(UAnimSequence *X, UAnimSequence *
 	FMemMark Mark(FMemStack::Get());
 	
 	float Difference = 0;
+
+	if (X == nullptr || Y == nullptr)
+	{
+		FString ProblemAsset = "";
+		if (X == nullptr)
+		{
+			ProblemAsset += "X";
+		}
+		if (Y == nullptr)
+		{
+			ProblemAsset += "Y";
+		}
+		UE_LOG(LogScript, Error, TEXT("UMAnimationConsumer: Called on missing sequence %s."), ToCStr(ProblemAsset));
+		return -99999;
+	}
 	
 	USkeleton* XSkeleton = X->GetSkeleton();
+	USkeleton* YSkeleton = Y->GetSkeleton();
+	
 	FBoneContainer XBoneContainer = FBoneContainer(BoneIndexTypeArrayOfSize(XSkeleton->GetReferenceSkeleton().GetNum()), UE::Anim::FCurveFilterSettings(), *XSkeleton);
+	FBoneContainer YBoneContainer = FBoneContainer(BoneIndexTypeArrayOfSize(YSkeleton->GetReferenceSkeleton().GetNum()), UE::Anim::FCurveFilterSettings(), *YSkeleton);
 	
 	FCompactPose XPose = FCompactPose();
 	XPose.SetBoneContainer(&XBoneContainer);
 	FBlendedCurve XCurve = FBlendedCurve();
 	UE::Anim::FStackAttributeContainer XAttributes;
 	FAnimationPoseData XData = FAnimationPoseData(XPose, XCurve, XAttributes);
-
-	USkeleton* YSkeleton = Y->GetSkeleton();
-	FBoneContainer YBoneContainer = FBoneContainer(BoneIndexTypeArrayOfSize(YSkeleton->GetReferenceSkeleton().GetNum()), UE::Anim::FCurveFilterSettings(), *YSkeleton);
 	
 	FCompactPose YPose = FCompactPose();
 	YPose.SetBoneContainer(&YBoneContainer);

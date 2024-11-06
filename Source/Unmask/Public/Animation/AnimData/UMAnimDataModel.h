@@ -10,69 +10,69 @@
  * 
  */
 UCLASS(BlueprintType, meta=(DebugTreeLeaf))
-class UNMASK_API UUMAnimDataModel : public UObject, public IAnimationDataModel
+class UUMAnimDataModel : public UObject, public IAnimationDataModel
 {
 	GENERATED_BODY()
 public:
 	/** Begin UObject overrides */
-	UNMASK_API virtual void PostLoad() override;
-	UNMASK_API virtual void PostDuplicate(bool bDuplicateForPIE) override;
+	virtual void PostLoad() override;
+	virtual void PostDuplicate(bool bDuplicateForPIE) override;
 	virtual bool IsEditorOnly() const override { return true; }
 	/** End UObject overrides */
 	
 	/** Begin IAnimationDataModel overrides */
-	UNMASK_API virtual double GetPlayLength() const override;
-	UNMASK_API virtual int32 GetNumberOfFrames() const override;
-	UNMASK_API virtual int32 GetNumberOfKeys() const override;
-	UNMASK_API virtual FFrameRate GetFrameRate() const override;
+	virtual double GetPlayLength() const override;
+	virtual int32 GetNumberOfFrames() const override;
+	virtual int32 GetNumberOfKeys() const override;
+	virtual FFrameRate GetFrameRate() const override;
 	
 	virtual const TArray<FBoneAnimationTrack>& GetBoneAnimationTracks() const override;
-	UNMASK_API virtual const FBoneAnimationTrack& GetBoneTrackByIndex(int32 TrackIndex) const override;
-	UNMASK_API virtual const FBoneAnimationTrack& GetBoneTrackByName(FName TrackName) const override;
-	UNMASK_API virtual const FBoneAnimationTrack* FindBoneTrackByName(FName Name) const override;
-	UNMASK_API virtual const FBoneAnimationTrack* FindBoneTrackByIndex(int32 BoneIndex) const override;
-	UNMASK_API virtual int32 GetBoneTrackIndex(const FBoneAnimationTrack& Track) const override;
-	UNMASK_API virtual int32 GetBoneTrackIndexByName(FName TrackName) const override;
-	UNMASK_API virtual bool IsValidBoneTrackIndex(int32 TrackIndex) const override;
+	virtual const FBoneAnimationTrack& GetBoneTrackByIndex(int32 TrackIndex) const override;
+	virtual const FBoneAnimationTrack& GetBoneTrackByName(FName TrackName) const override;
+	virtual const FBoneAnimationTrack* FindBoneTrackByName(FName Name) const override;
+	virtual const FBoneAnimationTrack* FindBoneTrackByIndex(int32 BoneIndex) const override;
+	virtual int32 GetBoneTrackIndex(const FBoneAnimationTrack& Track) const override;
+	virtual int32 GetBoneTrackIndexByName(FName TrackName) const override;
+	virtual bool IsValidBoneTrackIndex(int32 TrackIndex) const override;
 	
 	virtual int32 GetNumBoneTracks() const override;
-	UNMASK_API virtual void GetBoneTrackNames(TArray<FName>& OutNames) const override;
-	UNMASK_API virtual FTransform GetBoneTrackTransform(FName TrackName, const FFrameNumber& FrameNumber) const override;
-	UNMASK_API virtual void GetBoneTrackTransforms(FName TrackName, const TArray<FFrameNumber>& FrameNumbers, TArray<FTransform>& OutTransforms) const override;	
-	UNMASK_API virtual void GetBoneTrackTransforms(FName TrackName, TArray<FTransform>& OutTransforms) const override;
-	UNMASK_API virtual void GetBoneTracksTransform(const TArray<FName>& TrackNames, const FFrameNumber& FrameNumber, TArray<FTransform>& OutTransforms) const override;	
-	UNMASK_API virtual FTransform EvaluateBoneTrackTransform(FName TrackName, const FFrameTime& FrameTime, const EAnimInterpolationType& Interpolation) const override;
-	UNMASK_API virtual bool IsValidBoneTrackName(const FName& TrackName) const override;	
-	UNMASK_API virtual const FAnimCurveBase* FindCurve(const FAnimationCurveIdentifier& CurveIdentifier) const override;
-	UNMASK_API virtual const FFloatCurve* FindFloatCurve(const FAnimationCurveIdentifier& CurveIdentifier) const override;
-	UNMASK_API virtual const FTransformCurve* FindTransformCurve(const FAnimationCurveIdentifier& CurveIdentifier) const override;
-	UNMASK_API virtual const FRichCurve* FindRichCurve(const FAnimationCurveIdentifier& CurveIdentifier) const override;
-	UNMASK_API virtual const FAnimationCurveData& GetCurveData() const override;
-	UNMASK_API virtual int32 GetNumberOfTransformCurves() const override;
-	UNMASK_API virtual int32 GetNumberOfFloatCurves() const override;
-	UNMASK_API virtual const TArray<struct FFloatCurve>& GetFloatCurves() const override;
-	UNMASK_API virtual const TArray<struct FTransformCurve>& GetTransformCurves() const override;	
-	UNMASK_API virtual const FAnimCurveBase& GetCurve(const FAnimationCurveIdentifier& CurveIdentifier) const override;
-	UNMASK_API virtual const FFloatCurve& GetFloatCurve(const FAnimationCurveIdentifier& CurveIdentifier) const override;
-	UNMASK_API virtual const FTransformCurve& GetTransformCurve(const FAnimationCurveIdentifier& CurveIdentifier) const override;
-	UNMASK_API virtual const FRichCurve& GetRichCurve(const FAnimationCurveIdentifier& CurveIdentifier) const override;
-	UNMASK_API virtual TArrayView<const FAnimatedBoneAttribute> GetAttributes() const override;
-	UNMASK_API virtual int32 GetNumberOfAttributes() const override;
-	UNMASK_API virtual int32 GetNumberOfAttributesForBoneIndex(const int32 BoneIndex) const override;
-	UNMASK_API virtual void GetAttributesForBone(const FName& BoneName, TArray<const FAnimatedBoneAttribute*>& OutBoneAttributes) const override;
-	UNMASK_API virtual const FAnimatedBoneAttribute& GetAttribute(const FAnimationAttributeIdentifier& AttributeIdentifier) const override;
-	UNMASK_API virtual const FAnimatedBoneAttribute* FindAttribute(const FAnimationAttributeIdentifier& AttributeIdentifier) const override;
-	UNMASK_API virtual UAnimSequence* GetAnimationSequence() const override;
+	virtual void GetBoneTrackNames(TArray<FName>& OutNames) const override;
+	virtual FTransform GetBoneTrackTransform(FName TrackName, const FFrameNumber& FrameNumber) const override;
+	virtual void GetBoneTrackTransforms(FName TrackName, const TArray<FFrameNumber>& FrameNumbers, TArray<FTransform>& OutTransforms) const override;	
+	virtual void GetBoneTrackTransforms(FName TrackName, TArray<FTransform>& OutTransforms) const override;
+	virtual void GetBoneTracksTransform(const TArray<FName>& TrackNames, const FFrameNumber& FrameNumber, TArray<FTransform>& OutTransforms) const override;	
+	virtual FTransform EvaluateBoneTrackTransform(FName TrackName, const FFrameTime& FrameTime, const EAnimInterpolationType& Interpolation) const override;
+	virtual bool IsValidBoneTrackName(const FName& TrackName) const override;	
+	virtual const FAnimCurveBase* FindCurve(const FAnimationCurveIdentifier& CurveIdentifier) const override;
+	virtual const FFloatCurve* FindFloatCurve(const FAnimationCurveIdentifier& CurveIdentifier) const override;
+	virtual const FTransformCurve* FindTransformCurve(const FAnimationCurveIdentifier& CurveIdentifier) const override;
+	virtual const FRichCurve* FindRichCurve(const FAnimationCurveIdentifier& CurveIdentifier) const override;
+	virtual const FAnimationCurveData& GetCurveData() const override;
+	virtual int32 GetNumberOfTransformCurves() const override;
+	virtual int32 GetNumberOfFloatCurves() const override;
+	virtual const TArray<struct FFloatCurve>& GetFloatCurves() const override;
+	virtual const TArray<struct FTransformCurve>& GetTransformCurves() const override;	
+	virtual const FAnimCurveBase& GetCurve(const FAnimationCurveIdentifier& CurveIdentifier) const override;
+	virtual const FFloatCurve& GetFloatCurve(const FAnimationCurveIdentifier& CurveIdentifier) const override;
+	virtual const FTransformCurve& GetTransformCurve(const FAnimationCurveIdentifier& CurveIdentifier) const override;
+	virtual const FRichCurve& GetRichCurve(const FAnimationCurveIdentifier& CurveIdentifier) const override;
+	virtual TArrayView<const FAnimatedBoneAttribute> GetAttributes() const override;
+	virtual int32 GetNumberOfAttributes() const override;
+	virtual int32 GetNumberOfAttributesForBoneIndex(const int32 BoneIndex) const override;
+	virtual void GetAttributesForBone(const FName& BoneName, TArray<const FAnimatedBoneAttribute*>& OutBoneAttributes) const override;
+	virtual const FAnimatedBoneAttribute& GetAttribute(const FAnimationAttributeIdentifier& AttributeIdentifier) const override;
+	virtual const FAnimatedBoneAttribute* FindAttribute(const FAnimationAttributeIdentifier& AttributeIdentifier) const override;
+	virtual UAnimSequence* GetAnimationSequence() const override;
 	virtual FAnimDataModelModifiedEvent& GetModifiedEvent() override { return ModifiedEvent; }
-	UNMASK_API virtual FGuid GenerateGuid() const override;
+	virtual FGuid GenerateGuid() const override;
 #if WITH_EDITOR
-	UNMASK_API virtual void Evaluate(FAnimationPoseData& InOutPoseData, const UE::Anim::DataModel::FEvaluationContext& EvaluationContext) const override;
+	virtual void Evaluate(FAnimationPoseData& InOutPoseData, const UE::Anim::DataModel::FEvaluationContext& EvaluationContext) const override;
 #endif
-	UNMASK_API virtual TScriptInterface<IAnimationDataController> GetController() override;
+	virtual TScriptInterface<IAnimationDataController> GetController() override;
 	virtual bool HasBeenPopulated() const override { return bPopulated; }
-	UNMASK_API virtual void IterateBoneKeys(const FName& BoneName, TFunction<bool(const FVector3f& Pos, const FQuat4f&, const FVector3f, const FFrameNumber&)> IterationFunction) const override;
+	virtual void IterateBoneKeys(const FName& BoneName, TFunction<bool(const FVector3f& Pos, const FQuat4f&, const FVector3f, const FFrameNumber&)> IterationFunction) const override;
 protected:
-	UNMASK_API virtual IAnimationDataModel::FModelNotifier& GetNotifier() override;
+	virtual IAnimationDataModel::FModelNotifier& GetNotifier() override;
 	virtual FAnimDataModelModifiedDynamicEvent& GetModifiedDynamicEvent() override { return ModifiedEventDynamic; }
 	virtual void OnNotify(const EAnimDataModelNotifyType& NotifyType, const FAnimDataModelNotifPayload& Payload) override {}
 	virtual void LockEvaluationAndModification() const override final {}
@@ -82,14 +82,14 @@ protected:
 
 private:
 	/** Helper functionality used by UAnimDataController to retrieve mutable data */ 
-	UNMASK_API FBoneAnimationTrack* FindMutableBoneTrackByName(FName Name);
-	UNMASK_API FBoneAnimationTrack& GetMutableBoneTrackByName(FName Name);
-	UNMASK_API FTransformCurve* FindMutableTransformCurveById(const FAnimationCurveIdentifier& CurveIdentifier);
-	UNMASK_API FFloatCurve* FindMutableFloatCurveById(const FAnimationCurveIdentifier& CurveIdentifier);
-	UNMASK_API FAnimCurveBase* FindMutableCurveById(const FAnimationCurveIdentifier& CurveIdentifier);	   
-	UNMASK_API FRichCurve* GetMutableRichCurve(const FAnimationCurveIdentifier& CurveIdentifier);
+	FBoneAnimationTrack* FindMutableBoneTrackByName(FName Name);
+	FBoneAnimationTrack& GetMutableBoneTrackByName(FName Name);
+	FTransformCurve* FindMutableTransformCurveById(const FAnimationCurveIdentifier& CurveIdentifier);
+	FFloatCurve* FindMutableFloatCurveById(const FAnimationCurveIdentifier& CurveIdentifier);
+	FAnimCurveBase* FindMutableCurveById(const FAnimationCurveIdentifier& CurveIdentifier);	   
+	FRichCurve* GetMutableRichCurve(const FAnimationCurveIdentifier& CurveIdentifier);
 
-	UNMASK_API USkeleton* GetSkeleton() const;
+	USkeleton* GetSkeleton() const;
 
 private:
 	UPROPERTY(Transient)
