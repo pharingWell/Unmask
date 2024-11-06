@@ -7,6 +7,7 @@
 #include "AnimEncoding.h"
 #include "IAnimationDataControllerModule.h"
 #include "Animation/AnimSequenceHelpers.h"
+#include "Animation/AnimData/UMAnimDataController.h"
 
 namespace UE::Anim::Retargeting
 {
@@ -624,14 +625,9 @@ FGuid UUMAnimDataModel::GenerateGuid() const
 
 TScriptInterface<IAnimationDataController> UUMAnimDataModel::GetController()
 {
-	TScriptInterface<IAnimationDataController> Controller = nullptr;
-#if WITH_EDITOR
-	IAnimationDataControllerModule& ControllerModule = FModuleManager::Get().GetModuleChecked<
-		IAnimationDataControllerModule>("AnimationDataController");
-	Controller = ControllerModule.GetController();
+	
+	UUMAnimDataController* Controller = NewObject<UUMAnimDataController>(GetTransientPackage());
 	Controller->SetModel(this);
-#endif // WITH_EDITOR
-
 	return Controller;
 }
 

@@ -2,6 +2,7 @@
 #include "Animation/AnimData/UMAnimDataController.h"
 
 #include "Animation/AnimationSettings.h"
+#include "Animation/UMSequenceStructs.h"
 
 #if WITH_EDITOR
 #define LOCTEXT_NAMESPACE "AnimDataController"
@@ -669,6 +670,78 @@ bool UUMAnimDataController::SetCurveFlags(const FAnimationCurveIdentifier& Curve
 	}
 
 	return false;
+}
+
+bool UUMAnimDataController::SetTransformCurveKeys(const FAnimationCurveIdentifier& CurveId, const TArray<FUMKeyFrame>& JointSequence)
+{
+	ValidateModel();
+	if (Model->FindMutableTransformCurveById(CurveId) != nullptr)
+		{
+			// FBracket Bracket = ConditionalBracket(LOCTEXT("SetTransformCurveKeys_Bracket", "Setting Transform Curve Keys"), bShouldTransact);
+			
+			struct FKeys
+			{
+				FKeys(int32 NumKeys)
+				{
+					for (int32 ChannelIndex = 0; ChannelIndex < 3; ++ChannelIndex)
+					{
+						ChannelKeys[ChannelIndex].SetNum(NumKeys);
+					}
+				}
+
+				TArray<FRichCurveKey> ChannelKeys[3];
+			};
+
+			FKeys TranslationKeys(JointSequence.Num());
+			FKeys RotationKeys(JointSequence.Num());
+			FKeys ScaleKeys(JointSequence.Num());
+
+			FKeys* SubCurveKeys[3] = { &TranslationKeys, &RotationKeys, &ScaleKeys };
+
+			// Generate the curve keys
+			for (int32 KeyIndex = 0; KeyIndex < JointSequence.Num(); ++KeyIndex)
+			{
+				const FTransform& Value = JointSequence[KeyIndex].Transform;
+				const float& Time = JointSequence[KeyIndex].Time;
+
+				const FVector Translation = Value.GetLocation();
+				const FVector Rotation = Value.GetRotation().Euler();
+				const FVector Scale = Value.GetScale3D();
+
+				auto SetKey = [Time, KeyIndex](FKeys& Key, const FVector& Vector)
+				{
+					for (int32 ChannelIndex = 0; ChannelIndex < 3; ++ChannelIndex)
+					{
+						Key.ChannelKeys[ChannelIndex][KeyIndex] = FRichCurveKey(Time, static_cast<float>(Vector[ChannelIndex]));
+					}
+				};
+
+				SetKey(TranslationKeys, Translation);
+				SetKey(RotationKeys, Rotation);
+				SetKey(ScaleKeys, Scale);
+			}
+			
+			for (int32 SubCurveIndex = 0; SubCurveIndex < 3; ++SubCurveIndex)
+			{
+				const ETransformCurveChannel Channel = static_cast<ETransformCurveChannel>(SubCurveIndex);
+				const FKeys* CurveKeys = SubCurveKeys[SubCurveIndex];
+				for (int32 ChannelIndex = 0; ChannelIndex < 3; ++ChannelIndex)
+				{
+					const EVectorCurveChannel Axis = static_cast<EVectorCurveChannel>(ChannelIndex);
+					FAnimationCurveIdentifier TargetCurveIdentifier = CurveId;
+					UAnimationCurveIdentifierExtensions::GetTransformChildCurveIdentifier(TargetCurveIdentifier, Channel, Axis);
+					SetCurveKeys(TargetCurveIdentifier, CurveKeys->ChannelKeys[ChannelIndex], false);
+				}
+			}
+
+			return true;
+		}
+		else
+		{
+			UE_LOG(LogScript, Warning, TEXT("Unable to find transform curve: %s"), ToCStr(CurveId.CurveName.ToString()));
+		}
+
+	return false;	
 }
 
 bool UUMAnimDataController::SetTransformCurveKeys(const FAnimationCurveIdentifier& CurveId, const TArray<FTransform>& TransformValues, const TArray<float>& TimeKeys, bool bShouldTransact /*= true*/)
