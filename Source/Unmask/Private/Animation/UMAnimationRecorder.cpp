@@ -7,10 +7,10 @@
 
 FRecorderData UUMAnimationRecorder::InitRecorderData(USkeletalMeshComponent* Component, int Frames, int FrameRate)
 {
-	TMap<FName, FUMJointSequence> Joints;
+	TMap<FName, FUMJointTimeline> Joints;
 	for (int i = 0; i < Component->GetBoneSpaceTransforms().Num(); i++)
 	{
-		Joints.Add(Component->GetBoneName(i), FUMJointSequence());
+		Joints.Add(Component->GetBoneName(i), FUMJointTimeline());
 	}
 	FRecorderData OutData;
 	OutData.Component = Component;
@@ -27,7 +27,7 @@ void UUMAnimationRecorder::RecordFrame(FRecorderData Data)
 		TArray<FTransform> Transforms = Data.Component->GetBoneSpaceTransforms();
 		for (int i = 0; i < Transforms.Num(); i++)
 		{
-			Data.Joints.Find(Data.Component->GetBoneName(i))->JointSequence.Add(FUMKeyFrame(0, Transforms[i]));
+			Data.Joints.Find(Data.Component->GetBoneName(i))->Timeline.Add(FUMJointKey(0, Transforms[i]));
 		}
 	}
 	Data.CurrentFrame++;

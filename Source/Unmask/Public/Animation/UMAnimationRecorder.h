@@ -12,7 +12,7 @@ struct FRecorderData
 {
 	GENERATED_BODY()
 	
-	TMap<FName, FUMJointSequence> Joints;
+	TMap<FName, FUMJointTimeline> Joints;
 	USkeletalMeshComponent* Component;
 	int Frames, FrameRate;
 	int CurrentFrame = 0;

@@ -9,7 +9,7 @@
 #include "UMCueTree.generated.h"
 
 USTRUCT(Blueprintable, BlueprintType)
-struct FCueTreeNode
+struct FUMCueTreeNode
 {
 	GENERATED_BODY()
 	
@@ -21,17 +21,6 @@ struct FCueTreeNode
 	int Depth {-1};
 };
 
-USTRUCT(BlueprintType, BlueprintType)
-struct FBoneRotatorRange
-{
-	GENERATED_BODY()
-
-	UPROPERTY(Blueprintable, BlueprintReadWrite)
-	FRotator RotatorMin {FRotator()};
-	UPROPERTY(Blueprintable, BlueprintReadWrite)
-	FRotator RotatorMax {FRotator()};
-};
-
 UCLASS()
 class UNMASK_API UUMCueTree : public UObject
 {
@@ -39,18 +28,18 @@ class UNMASK_API UUMCueTree : public UObject
 	
 	protected:
 		UPROPERTY()
-		TArray<FCueTreeNode> Nodes;
+		TArray<FUMCueTreeNode> Nodes;
 		UPROPERTY()
 		USkeletalMesh *SkeletalMesh;
 		UPROPERTY()
-		TMap<FName, FBoneRotatorRange> Ranges;
+		TMap<FName, FRotatorRange> Ranges;
 		UFUNCTION()
 		UAnimSequence *GenerateAnimation(const int Frames, const float PlayLength);
 
 	UUMCueTree();
-	UUMCueTree(USkeletalMesh *SkeletalMesh, const TMap<FName, FBoneRotatorRange> Ranges, const int AvgChildren, const int MinDepth, const int MaxDepth, const int Frames, const float PlayLength);
+	UUMCueTree(USkeletalMesh *SkeletalMesh, const TMap<FName, FRotatorRange> Ranges, const int AvgChildren, const int MinDepth, const int MaxDepth, const int Frames, const float PlayLength);
 	UFUNCTION(BlueprintCallable, Category = "CueTree")
-	FCueTreeNode GetRoot();
+	FUMCueTreeNode GetRoot();
 	UFUNCTION(BlueprintCallable, Category = "CueTree")
 	static float RandInRange(float Min, float Max);
 };
