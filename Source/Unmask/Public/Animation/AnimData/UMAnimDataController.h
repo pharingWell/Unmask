@@ -8,10 +8,11 @@
 #include "Animation/AnimData/AnimDataModel.h"
 #include "Animation/AnimData/IAnimationDataController.h"
 #include "Animation/AnimCurveTypes.h"
+#include "Animation/UMSequenceStructs.h"
 
 #include "UMAnimDataController.generated.h"
 
-struct FUMKeyFrame;
+struct FUMKeyframe;
 /**
  * Hope this works
  */
@@ -59,7 +60,7 @@ public:
 	virtual void RemoveAllCurvesOfType(ERawCurveTrackTypes SupportedCurveType, bool bShouldTransact = true) override;
 	virtual bool SetCurveFlag(const FAnimationCurveIdentifier& CurveId, EAnimAssetCurveFlags Flag, bool bState = true, bool bShouldTransact = true) override;
 	virtual bool SetCurveFlags(const FAnimationCurveIdentifier& CurveId, int32 Flags, bool bShouldTransact = true) override; 
-	bool SetTransformCurveKeys(const FAnimationCurveIdentifier& CurveId, const TArray<FUMKeyFrame>& JointSequence); //not an override
+	bool SetTransformCurveKeys(const FAnimationCurveIdentifier& CurveId, const FUMJointTimeline& JointTimeline); //not an override
 	virtual bool SetTransformCurveKeys(const FAnimationCurveIdentifier& CurveId, const TArray<FTransform>& TransformValues, const TArray<float>& TimeKeys, bool bShouldTransact = true) override;	
 	virtual bool SetTransformCurveKey(const FAnimationCurveIdentifier& CurveId, float Time, const FTransform& Value, bool bShouldTransact = true) override;
 	virtual bool RemoveTransformCurveKey(const FAnimationCurveIdentifier& CurveId, float Time, bool bShouldTransact = true) override;

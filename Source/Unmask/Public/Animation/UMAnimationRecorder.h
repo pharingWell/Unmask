@@ -12,7 +12,7 @@ struct FRecorderData
 {
 	GENERATED_BODY()
 	
-	TMap<FName, FUMJointSequence> Joints;
+	TMap<FName, FUMJointTimeline> Joints;
 	USkeletalMeshComponent* Component;
 	int Frames, FrameRate;
 	int CurrentFrame = 0;
@@ -33,5 +33,5 @@ class UNMASK_API UUMAnimationRecorder : public UObject
 		UFUNCTION(BlueprintCallable, Category = "Animation|Recording")
 		static UAnimSequence* ProducePlayback(FRecorderData Data);
 		UFUNCTION(BlueprintCallable, Category = "Animation|Recording")
-		static TMap<FName, FUMJointSequence> GetJoints(FRecorderData Data) { return Data.Joints; }
+		static TMap<FName, FUMJointTimeline> GetJoints(FRecorderData Data) { return Data.Joints; }
 };

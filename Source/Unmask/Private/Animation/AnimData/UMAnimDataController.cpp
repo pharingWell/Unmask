@@ -672,11 +672,12 @@ bool UUMAnimDataController::SetCurveFlags(const FAnimationCurveIdentifier& Curve
 	return false;
 }
 
-bool UUMAnimDataController::SetTransformCurveKeys(const FAnimationCurveIdentifier& CurveId, const TArray<FUMKeyFrame>& JointSequence)
+bool UUMAnimDataController::SetTransformCurveKeys(const FAnimationCurveIdentifier& CurveId, const FUMJointTimeline& JointTimeline)
 {
 	ValidateModel();
 	if (Model->FindMutableTransformCurveById(CurveId) != nullptr)
 		{
+		auto &Timeline = JointTimeline.Timeline;
 			// FBracket Bracket = ConditionalBracket(LOCTEXT("SetTransformCurveKeys_Bracket", "Setting Transform Curve Keys"), bShouldTransact);
 			
 			struct FKeys
@@ -692,17 +693,17 @@ bool UUMAnimDataController::SetTransformCurveKeys(const FAnimationCurveIdentifie
 				TArray<FRichCurveKey> ChannelKeys[3];
 			};
 
-			FKeys TranslationKeys(JointSequence.Num());
-			FKeys RotationKeys(JointSequence.Num());
-			FKeys ScaleKeys(JointSequence.Num());
+			FKeys TranslationKeys(Timeline.Num());
+			FKeys RotationKeys(Timeline.Num());
+			FKeys ScaleKeys(Timeline.Num());
 
 			FKeys* SubCurveKeys[3] = { &TranslationKeys, &RotationKeys, &ScaleKeys };
 
 			// Generate the curve keys
-			for (int32 KeyIndex = 0; KeyIndex < JointSequence.Num(); ++KeyIndex)
+			for (int32 KeyIndex = 0; KeyIndex < Timeline.Num(); ++KeyIndex)
 			{
-				const FTransform& Value = JointSequence[KeyIndex].Transform;
-				const float& Time = JointSequence[KeyIndex].Time;
+				const FTransform& Value = Timeline[KeyIndex].Transform;
+				const float& Time = Timeline[KeyIndex].Time;
 
 				const FVector Translation = Value.GetLocation();
 				const FVector Rotation = Value.GetRotation().Euler();

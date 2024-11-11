@@ -2,6 +2,8 @@
 
 #include "UMCueTree.h"
 
+#include <random>
+
 float UUMCueTree::RandInRange(float Min, float Max)
 {
 	return FMath::FRand() * (Max - Min) + Min;
@@ -9,33 +11,34 @@ float UUMCueTree::RandInRange(float Min, float Max)
 
 UUMCueTree* UUMCueTree::CreateMVPTree(USkeletalMesh* Mesh)
 {
-	TMap<FName, FBoneRotatorRange> Ranges;
-	Ranges.Add(FName("upperarm_r"), FBoneRotatorRange(FRotator(-90, 0, 0), FRotator(90, 0, 0)));
-	Ranges.Add(FName("lowerarm_r"), FBoneRotatorRange(FRotator(0, 0, -90), FRotator(180, 0, 90)));
-	Ranges.Add(FName("hand_r"), FBoneRotatorRange(FRotator(-90, -90, -90), FRotator(90, 90, 90)));
+	TMap<FName, FRotatorRange> Ranges;
+	Ranges.Add(FName("upperarm_r"), FRotatorRange(FRotator(-90, 0, 0), FRotator(90, 0, 0)));
+	Ranges.Add(FName("lowerarm_r"), FRotatorRange(FRotator(0, 0, -90), FRotator(180, 0, 90)));
+	Ranges.Add(FName("hand_r"), FRotatorRange(FRotator(-90, -90, -90), FRotator(90, 90, 90)));
 	
 	UUMCueTree* Tree = NewObject<UUMCueTree>();
 	Tree->InitCueTree(Mesh, Ranges, 1, 1, 3, 27, 1);
 	return Tree;
 }
 
-FCueTreeNode UUMCueTree::GetRoot()
+FUMCueTreeNode UUMCueTree::GetRoot()
 {
 	return this->Nodes[0];
 }
 
 UUMCueTree::UUMCueTree()
 {
-	this->Ranges = TMap<FName, FBoneRotatorRange>();
+	this->Ranges = TMap<FName, FRotatorRange>();
 	this->SkeletalMesh = nullptr;
 }
 
-void UUMCueTree::InitCueTree(USkeletalMesh *InitSkeletalMesh, const TMap<FName, FBoneRotatorRange> InitRanges, const int AvgChildren, const int MinDepth, const int MaxDepth, const int Frames, const float PlayLength)
+void UUMCueTree::InitCueTree(USkeletalMesh *InitSkeletalMesh, const TMap<FName, FRotatorRange> InitRanges,
+	const int AvgChildren, const int MinDepth, const int MaxDepth, const int Frames, const float PlayLength)
 {
 	this->Ranges = InitRanges;
 	this->SkeletalMesh = InitSkeletalMesh;
 	TQueue<int> ToBeExpanded;
-	FCueTreeNode Root;
+	FUMCueTreeNode Root;
 	Root.Depth = 0;
 	Nodes.Add(Root);
 	ToBeExpanded.Enqueue(0);
@@ -48,7 +51,7 @@ void UUMCueTree::InitCueTree(USkeletalMesh *InitSkeletalMesh, const TMap<FName, 
 		if (ChildrenCount < 1 and Nodes[ParentNodeIndex].Depth < MinDepth) ChildrenCount = 1;
 		for (int i = 0; i < ChildrenCount; i++)
 		{
-			FCueTreeNode ChildNode;
+			FUMCueTreeNode ChildNode;
 			ChildNode.Depth = Nodes[ParentNodeIndex].Depth + 1;
 			ChildNode.Animation = GenerateAnimation(Frames, PlayLength);
 			int ChildNodeIndex = Nodes.Add(ChildNode);
@@ -61,34 +64,34 @@ void UUMCueTree::InitCueTree(USkeletalMesh *InitSkeletalMesh, const TMap<FName, 
 UAnimSequence *UUMCueTree::GenerateAnimation(const int Frames, const float PlayLength)
 {
 	float DeltaTime = PlayLength / Frames;
-	TMap<FName, FUMJointSequence> Joints;
+	TMap<FName, FUMJointTimeline> Joints;
 	
-	for (TTuple<FName, FBoneRotatorRange> Range : this->Ranges)
+	for (TTuple<FName, FRotatorRange> Range : this->Ranges)
 	{
-		FUMJointSequence JointSequence;
+		FUMJointTimeline JointTimeline;
 		const int Index = this->SkeletalMesh->GetSkeleton()->GetReferenceSkeleton().FindBoneIndex(Range.Key);
-		JointSequence.JointSequence.Add(FUMKeyFrame(0, this->SkeletalMesh->GetSkeleton()->GetReferenceSkeleton().GetRefBonePose()[Index]));
-		Joints.Add(Range.Key, JointSequence);
+		JointTimeline.Timeline.Add(FUMJointKey(0, this->SkeletalMesh->GetSkeleton()->GetReferenceSkeleton().GetRefBonePose()[Index]));
+		Joints.Add(Range.Key, JointTimeline);
 	}
 	
 	for (int T = 1; T < Frames; T++)
 	{
-		for (TTuple<FName, FBoneRotatorRange> Range : this->Ranges)
+		for (auto [Name, Range] : this->Ranges)
 		{
-			const FRotator Max = Range.Value.RotatorMax;
-			const FRotator Min = Range.Value.RotatorMin;
+			const FRotator Max = Range.Max;
+			const FRotator Min = Range.Min;
 			
 			const float MaxPitchMovement = DeltaTime * (Max.Pitch - Min.Pitch);
 			const float MaxRollMovement = DeltaTime * (Max.Roll - Min.Roll);
 			const float MaxYawMovement = DeltaTime * (Max.Yaw - Min.Yaw);
 
-			const FRotator LastPose = FRotator(Joints.Find(Range.Key)->JointSequence.Last().Transform.Rotator());
+			const FRotator LastPose = FRotator(Joints.Find(Name)->Timeline.Last().Transform.Rotator());
 
 			const float NewJointPitch = FMath::Clamp(RandInRange(-1, 1) * MaxPitchMovement + LastPose.Pitch, Min.Pitch, Max.Pitch);
 			const float NewJointRoll = FMath::Clamp(RandInRange(-1, 1) * MaxRollMovement + LastPose.Roll, Min.Roll, Max.Roll);
 			const float NewJointYaw = FMath::Clamp(RandInRange(-1, 1) * MaxYawMovement + LastPose.Yaw, Min.Yaw, Max.Yaw);
 			
-			Joints.Find(Range.Key)->JointSequence.Add(FUMKeyFrame(T * DeltaTime, FTransform(FRotator(NewJointPitch, NewJointYaw, NewJointRoll))));
+			Joints.Find(Name)->Timeline.Add(FUMJointKey(T * DeltaTime, FTransform(FRotator(NewJointPitch, NewJointYaw, NewJointRoll))));
 		}
 	}
 

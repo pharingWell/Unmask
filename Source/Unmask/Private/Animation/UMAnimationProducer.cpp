@@ -15,8 +15,6 @@
 
 static int Counter = 0;
 
-#define FPS 60
-
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(Test_AnimationDetection, "Unmask.Tests.AnimationSystem.Producer",
 								 EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
@@ -26,7 +24,7 @@ bool Test_AnimationDetection::RunTest(const FString& Parameters)
 	return true;
 }
 
-UAnimSequence* UUMAnimationProducer::CreateSequence(const TMap<FName, FUMJointSequence>& JointTracks,
+UAnimSequence* UUMAnimationProducer::CreateSequence(const TMap<FName, FUMJointTimeline>& JointTimeline,
 												   USkeletalMesh* AnimatedObject)
 {
 	FString SequenceName = "PosedSequence";
@@ -43,6 +41,7 @@ UAnimSequence* UUMAnimationProducer::CreateSequence(const TMap<FName, FUMJointSe
 	}
 	UObject* Object = LoadObject<UObject>(ParentPackage, *SequenceName, NULL, LOAD_NoWarn, NULL);
 	UUMAnimSequence *DestSeq = Cast<UUMAnimSequence>(Object);
+	
 	// If not, create new one now.
 	if (!DestSeq)
 	{
@@ -55,10 +54,10 @@ UAnimSequence* UUMAnimationProducer::CreateSequence(const TMap<FName, FUMJointSe
 	UUMController.RemoveAllBoneTracks(false);
 	// set frame rate
 	int32 ResampleRate = 24;
-	int32 SequenceLength = 1;
-	for (auto Joint : JointTracks)
+	double SequenceLength = 1.0;
+	for (auto Joint : JointTimeline)
 	{
-		SequenceLength = FGenericPlatformMath::Max<int32>(SequenceLength, Joint.Value.JointSequence.Last().Time);
+		SequenceLength = FGenericPlatformMath::Max<int32>(SequenceLength, Joint.Value.Timeline.Last().Time);
 	}
 	const FFrameRate ResampleFrameRate(ResampleRate, 1);
 	UUMController.SetFrameRate(ResampleFrameRate, false);
@@ -69,20 +68,25 @@ UAnimSequence* UUMAnimationProducer::CreateSequence(const TMap<FName, FUMJointSe
 	//
 	// int32 CurveAttributeKeyCount = 0;
 	// ImportBlendShapeCurves(AnimImportSettings, CurAnimStack, CurveAttributeKeyCount, bReimport);
-	for (auto Joint : JointTracks)
+	
+	for (auto Joint : JointTimeline)
 	{
 		FName &BoneName = Joint.Key;
-		TArray<FUMKeyFrame> &JointSequence = Joint.Value.JointSequence;
-		
-		for (auto &Keyframe : JointSequence)
+		TArray<FUMJointKey> &Timeline = Joint.Value.Timeline;
+		for (auto &Keyframe : Timeline)
 		{
-			FTransform& Transform = Keyframe.Transform;
-			Transform.NormalizeRotation();
+			Keyframe.Transform.NormalizeRotation();
 		}
-		const FAnimationCurveIdentifier CurveId(FName(BoneName.ToString() + TEXT("_Curve")), ERawCurveTrackTypes::RCT_Transform);
+		FName TrackName = FName(BoneName.ToString() + TEXT("_Curve"));
+		const FAnimationCurveIdentifier CurveId(BoneName, ERawCurveTrackTypes::RCT_Transform);
 		UUMController.AddCurve(CurveId, EAnimAssetCurveFlags::AACF_NONE, false);
-		UUMController.SetTransformCurveKeys(CurveId, JointSequence);
+		UUMController.AddBoneCurve(BoneName, false);
+		UUMController.SetTransformCurveKeys(CurveId, Timeline);
+		FFrameTime FrameTime = FFrameTime(1 + ResampleRate * 3);
+		FTransform TransformAt0 = UUMController.GetModel()->EvaluateBoneTrackTransform(TrackName, FrameTime, EAnimInterpolationType::Linear);
+		UE_LOG(LogScript, Warning, TEXT("Transform evaluated for BoneTrack %s: [%s]"), *TrackName.ToString(), *TransformAt0.ToString())
 	}
+	
 	// Reregister skeletal mesh components so they reflect the updated animation
 	for (TObjectIterator<USkeletalMeshComponent> Iter; Iter; ++Iter)
 	{

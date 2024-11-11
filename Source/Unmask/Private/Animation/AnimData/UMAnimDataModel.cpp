@@ -195,7 +195,6 @@ int32 UUMAnimDataModel::GetNumBoneTracks() const
 
 UAnimSequence* UUMAnimDataModel::GetAnimationSequence() const
 {
-	UE_LOG(LogScript, Error, TEXT("Get animation sequence"))
 	UObject* AnimObject = static_cast<UObject*>(FindObjectWithOuter(GetOuter(), UAnimSequence::StaticClass()));
 	return CastChecked<UAnimSequence>(AnimObject ? AnimObject : GetOuter());
 }
@@ -248,7 +247,7 @@ void UUMAnimDataModel::GetBoneTrackTransforms(FName TrackName, const TArray<FFra
 	{
 		for (int32 EntryIndex = 0; EntryIndex < FrameNumbers.Num(); ++EntryIndex)
 		{
-			OutTransforms[EntryIndex] = GetBoneTrackTransform(TrackName, FrameNumbers[EntryIndex]);
+				OutTransforms[EntryIndex] = GetBoneTrackTransform(TrackName, FrameNumbers[EntryIndex]);
 		}
 	}
 }

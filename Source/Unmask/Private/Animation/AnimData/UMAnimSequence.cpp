@@ -2,7 +2,7 @@
 
 #include "Animation/AnimData/UMAnimSequence.h"
 
-#include "AnimationData/Private/AnimSequencerDataModel.h"
+//#include "AnimationData/Private/AnimSequencerDataModel.h"
 #include "Animation/AnimData/UMAnimDataController.h"
 #include "Animation/AnimData/UMAnimDataModel.h"
 
@@ -30,11 +30,7 @@ void UUMAnimSequence::CorrectModel()
 			SkeletonLinker->Preload(MySkeleton);
 		}
 		MySkeleton->ConditionalPostLoad();
-	}else
-	{
-		UE_LOG(LogScript, Error, TEXT("Where me bones???"))
 	}
-		
 	
 }
 

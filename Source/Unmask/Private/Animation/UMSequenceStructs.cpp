@@ -2,13 +2,23 @@
 
 #include "Components/PoseableMeshComponent.h"
 
-FUMKeyFrame UMSequenceHelper::MakeKeyframe(float Time, FTransform Transform)
+
+
+FUMJointKey UMSequenceHelper::MakeKeyframe(float Time, const FTransform &Transform)
 {
-	return {0.0f, FTransform(UE::Math::TVector(0.0))};
+	return {Time, Transform};
 }
 
-FUMJointSequence UMSequenceHelper::MakeJointSequence(const TArray<FUMKeyFrame>& Joints)
+FUMJoint UMSequenceHelper::MakeJoint(FName NameIn, const FRotatorRange& RangeLimitsIn,
+                                     const FUMJointTimeline& SequenceIn)
+{ return {NameIn, RangeLimitsIn, SequenceIn}; }
+
+const FUMJointGroup& UMSequenceHelper::MakeJointGroup(FName Name, const TArray<FUMJointGroup>& Groups,
+                                                      const TArray<FUMJoint>& Joints)
 {
-	
-	return {Joints};
-}	
+	FUMJointGroup* JointGroup = new FUMJointGroup();
+	JointGroup->Name = Name;
+	JointGroup->AddGroups(Groups);
+	JointGroup->AddJoints(Joints);
+	return *JointGroup;
+}
