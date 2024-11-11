@@ -4,13 +4,11 @@
 #include "Animation/AnimationSettings.h"
 #include "Animation/UMSequenceStructs.h"
 
+void UUMAnimDataController::OpenBracket(const FText& InTitle, bool bShouldTransact /*= true*/)
+{	
 #if WITH_EDITOR
 #define LOCTEXT_NAMESPACE "AnimDataController"
-
-void UUMAnimDataController::OpenBracket(const FText& InTitle, bool bShouldTransact /*= true*/)
-{
 	ValidateModel();
-
 	if (BracketDepth == 0)
 	{
 		FBracketPayload Payload;
@@ -20,10 +18,14 @@ void UUMAnimDataController::OpenBracket(const FText& InTitle, bool bShouldTransa
 	}
 
 	++BracketDepth;
+#endif
+#undef LOCTEXT_NAMESPACE //"AnimDataController"
 }
 
 void UUMAnimDataController::CloseBracket(bool bShouldTransact /*= true*/)
 {
+#if WITH_EDITOR
+#define LOCTEXT_NAMESPACE "AnimDataController"
 	ValidateModel();
 
 	if (BracketDepth == 0)
@@ -38,10 +40,11 @@ void UUMAnimDataController::CloseBracket(bool bShouldTransact /*= true*/)
 	{
 		Model->GetNotifier().Notify(EAnimDataModelNotifyType::BracketClosed);
 	}
-}
-
 #endif
 #undef LOCTEXT_NAMESPACE //"AnimDataController"
+}
+
+
 
 void UUMAnimDataController::SetModel(TScriptInterface<IAnimationDataModel> InModel)
 {	
@@ -730,7 +733,7 @@ bool UUMAnimDataController::SetTransformCurveKeys(const FAnimationCurveIdentifie
 				{
 					const EVectorCurveChannel Axis = static_cast<EVectorCurveChannel>(ChannelIndex);
 					FAnimationCurveIdentifier TargetCurveIdentifier = CurveId;
-					UAnimationCurveIdentifierExtensions::GetTransformChildCurveIdentifier(TargetCurveIdentifier, Channel, Axis);
+					GetTransformChildCurveIdentifier(TargetCurveIdentifier, Channel, Axis);
 					SetCurveKeys(TargetCurveIdentifier, CurveKeys->ChannelKeys[ChannelIndex], false);
 				}
 			}
@@ -805,7 +808,7 @@ bool UUMAnimDataController::SetTransformCurveKeys(const FAnimationCurveIdentifie
 				{
 					const EVectorCurveChannel Axis = static_cast<EVectorCurveChannel>(ChannelIndex);
 					FAnimationCurveIdentifier TargetCurveIdentifier = CurveId;
-					UAnimationCurveIdentifierExtensions::GetTransformChildCurveIdentifier(TargetCurveIdentifier, Channel, Axis);
+					GetTransformChildCurveIdentifier(TargetCurveIdentifier, Channel, Axis);
 					SetCurveKeys(TargetCurveIdentifier, CurveKeys->ChannelKeys[ChannelIndex], bShouldTransact);
 				}
 			}
@@ -866,7 +869,7 @@ bool UUMAnimDataController::SetTransformCurveKey(const FAnimationCurveIdentifier
 			{
 				const EVectorCurveChannel Axis = static_cast<EVectorCurveChannel>(ChannelIndex);
 				FAnimationCurveIdentifier TargetCurveIdentifier = CurveId;
-				UAnimationCurveIdentifierExtensions::GetTransformChildCurveIdentifier(TargetCurveIdentifier, Channel, Axis);
+				GetTransformChildCurveIdentifier(TargetCurveIdentifier, Channel, Axis);
 				SetCurveKey(TargetCurveIdentifier, VectorCurveKeys.ChannelKeys[ChannelIndex], bShouldTransact);
 			}
 		}
@@ -901,7 +904,7 @@ bool UUMAnimDataController::RemoveTransformCurveKey(const FAnimationCurveIdentif
 			{
 				const EVectorCurveChannel Axis = static_cast<EVectorCurveChannel>(ChannelIndex);
 				FAnimationCurveIdentifier TargetCurveIdentifier = CurveId;
-				UAnimationCurveIdentifierExtensions::GetTransformChildCurveIdentifier(TargetCurveIdentifier, Channel, Axis);
+				GetTransformChildCurveIdentifier(TargetCurveIdentifier, Channel, Axis);
 				RemoveCurveKey(TargetCurveIdentifier, Time, bShouldTransact);
 			}
 		}
@@ -978,13 +981,13 @@ bool UUMAnimDataController::SetCurveColor(const FAnimationCurveIdentifier& Curve
 	{
 		if (CurveId.CurveType == ERawCurveTrackTypes::RCT_Float)
 		{
-			if (FFloatCurve* Curve = Model->FindMutableFloatCurveById(CurveId))
+			if (Model->FindMutableFloatCurveById(CurveId)) //FFloatCurve* Curve = 
 			{
 				// FTransaction Transaction = ConditionalTransaction(LOCTEXT("ChangingCurveColor", "Changing Curve Color"), bShouldTransact);
 
 				// ConditionalAction<UE::Anim::FSetCurveColorAction>(bShouldTransact, CurveId, Curve->Color);
 
-				Curve->Color = Color;
+				//Curve->Color = Color;
 
 				FCurveChangedPayload Payload;
 				Payload.Identifier = CurveId;
@@ -1019,13 +1022,13 @@ bool UUMAnimDataController::SetCurveComment(const FAnimationCurveIdentifier& Cur
 	{
 		if (CurveId.CurveType == ERawCurveTrackTypes::RCT_Float)
 		{
-			if (FFloatCurve* Curve = Model->FindMutableFloatCurveById(CurveId))
+			if (Model->FindMutableFloatCurveById(CurveId)) //FFloatCurve* Curve = 
 			{
 				// FTransaction Transaction = ConditionalTransaction(LOCTEXT("ChangingCurveComment", "Changing Curve Comment"), bShouldTransact);
 
 				// ConditionalAction<UE::Anim::FSetCurveCommentAction>(bShouldTransact, CurveId, Curve->Comment);
 
-				Curve->Comment = Comment;
+				//Curve->Comment = Comment;
 
 				FCurveChangedPayload Payload;
 				Payload.Identifier = CurveId;
@@ -1695,8 +1698,10 @@ bool UUMAnimDataController::UpdateBoneTrackKeys(FName BoneName, const FInt32Rang
 	return false;
 }
 
+
 void UUMAnimDataController::ResizeCurves(float NewLength, bool bInserted, float T0, float T1, bool bShouldTransact /*= true*/)
 {
+#if WITH_EDITOR
 	// FBracket Bracket = ConditionalBracket(LOCTEXT("ResizeCurves", "Resizing all Curves"), bShouldTransact);
 
 	for (FFloatCurve& Curve : Model->CurveData.FloatCurves)
@@ -1717,15 +1722,16 @@ void UUMAnimDataController::ResizeCurves(float NewLength, bool bInserted, float 
 			{
 				const EVectorCurveChannel Axis = static_cast<EVectorCurveChannel>(ChannelIndex);
 				FAnimationCurveIdentifier TargetCurveIdentifier = FAnimationCurveIdentifier(Curve.GetName(), ERawCurveTrackTypes::RCT_Transform);
-				UAnimationCurveIdentifierExtensions::GetTransformChildCurveIdentifier(TargetCurveIdentifier, Channel, Axis);
-				
+				GetTransformChildCurveIdentifier(TargetCurveIdentifier, Channel, Axis);
 				FRichCurve& ChannelCurve = SubCurve.FloatCurves[ChannelIndex];
 				ChannelCurve.ReadjustTimeRange(0, NewLength, bInserted, T0, T1);
 				SetCurveKeys(TargetCurveIdentifier, ChannelCurve.GetConstRefOfKeys(), bShouldTransact);
 			}
 		}
 	}
+#endif
 }
+
 
 void UUMAnimDataController::ResizeAttributes(float NewLength, bool bInserted, float T0, float T1, bool bShouldTransact)
 {
@@ -2128,12 +2134,18 @@ void UUMAnimDataController::PopulateWithExistingModel(TScriptInterface<IAnimatio
 	Model->AnimatedBoneAttributes = InModel->GetAttributes();
 }
 
-void UUMAnimDataController::InitializeModel()
+bool UUMAnimDataController::GetTransformChildCurveIdentifier(FAnimationCurveIdentifier& InOutIdentifier, ETransformCurveChannel Channel, EVectorCurveChannel Axis)
 {
-	if (const UAnimSequence* AnimSequence = Model->GetAnimationSequence())
+	if (InOutIdentifier.IsValid())
 	{
+		if (InOutIdentifier.CurveType == ERawCurveTrackTypes::RCT_Transform)
+		{
+			InOutIdentifier.Channel = Channel;
+			InOutIdentifier.Axis = Axis;
 
+			return true;
+		}
 	}
-				
-				
+
+	return false;
 }

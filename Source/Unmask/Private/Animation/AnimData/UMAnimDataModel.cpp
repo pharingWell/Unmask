@@ -5,9 +5,10 @@
 #include "Animation/AnimData/UMAnimDataModel.h"
 
 #include "AnimEncoding.h"
-#include "IAnimationDataControllerModule.h"
 #include "Animation/AnimSequenceHelpers.h"
 #include "Animation/AnimData/UMAnimDataController.h"
+
+class IAnimationDataController;
 
 namespace UE::Anim::Retargeting
 {

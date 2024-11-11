@@ -2,16 +2,20 @@
 
 #include "UMSequenceStructs.generated.h"
 
+class UUMSequenceHelper;
+
 USTRUCT(Blueprintable, BlueprintType)
 struct FRotatorRange
 {
 	GENERATED_BODY()
-	FRotatorRange() : Min(FRotator()), Max(FRotator()){}
+	
+	FRotatorRange(){}
 	FRotatorRange(const FRotator& StartIn, const FRotator& EndIn) : Min(StartIn), Max(EndIn){}
+	
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
-	FRotator Min;
-	UPROPERTY(Blueprintable, BlueprintReadWrite)
-	FRotator Max;
+	FRotator Min {FRotator()};
+	UPROPERTY(Blueprintable, BlueprintReadWrite) 
+	FRotator Max {FRotator()};
 };
 
 // Represents a joint's state at a given point in time
@@ -37,6 +41,7 @@ struct FUMJointTimeline
 public:
 	FUMJointTimeline() {}
 	FUMJointTimeline(const TArray<FUMJointKey>& JointTimelineIn) : Timeline(JointTimelineIn) {}
+	UPROPERTY(Blueprintable, BlueprintReadWrite)
 	TArray<FUMJointKey> Timeline;
 };
 
@@ -48,7 +53,9 @@ struct FUMJoint
 {
 	GENERATED_BODY()
 	FName Name;
+	UPROPERTY(Blueprintable, BlueprintReadWrite)
 	FRotatorRange RangeLimits {FRotatorRange()};
+	UPROPERTY(Blueprintable, BlueprintReadWrite)
 	FUMJointTimeline Timeline; // Collections of keyframes that have been set for the joint
 };
 
@@ -61,7 +68,7 @@ struct FUMJointGroup
 	GENERATED_BODY()
 	
 public:
-	
+	UPROPERTY(Blueprintable, BlueprintReadWrite)
 	FName Name;
 	//static TArray<FUMJointGroup*> AllGroups;
 public:
@@ -114,10 +121,12 @@ private:
 	TArray<FUMJointGroup> Groups;
 	TArray<FUMJoint> Joints;
 	TMap<FName, FUMJointTimeline> AllTimelines;
+
+	friend UUMSequenceHelper;
 };
 
 UCLASS()
-class UMSequenceHelper :  public UBlueprintFunctionLibrary
+class UUMSequenceHelper :  public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 	
@@ -130,4 +139,35 @@ class UMSequenceHelper :  public UBlueprintFunctionLibrary
 	UFUNCTION(BlueprintPure, Category = "Animation|Sequencer", meta=(BlueprintThreadSafe))
 	static const FUMJointGroup& MakeJointGroup(FName Name, const TArray<FUMJointGroup>& Groups,
 	                                           const TArray<FUMJoint>& Joints);
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
+	static void AddGroups(FUMJointGroup& JointGroup, const TArray<FUMJointGroup>& GroupsIn)
+	{
+		for (auto& Group : GroupsIn) { AddGroup(JointGroup, Group); }
+	}
+	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
+	static void AddGroup(FUMJointGroup& JointGroup, const FUMJointGroup& Group)
+	{
+		// No reserve tricks because they screw up amortized constant time
+		for (const auto& [OldName, Timeline] : Group.AllTimelines)
+		{
+			JointGroup.AllTimelines.Add(
+				FName(Group.Name.ToString() + TEXT(".") + OldName.ToString()), 
+				Timeline
+			);
+		}
+		JointGroup.Groups.Add(Group);
+		//Groups.Last().Parent = Me;
+	}
+	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
+	static void AddJoints(FUMJointGroup& JointGroup, const TArray<FUMJoint>& JointsIn)
+	{
+		for (auto& Joint : JointsIn) { AddJoint(JointGroup, Joint); }
+	}
+	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
+	static void AddJoint(FUMJointGroup& JointGroup, const FUMJoint& Joint)
+	{
+		JointGroup.AllTimelines.Add(Joint.Name, Joint.Timeline);
+		JointGroup.Joints.Add(Joint);
+	}
 };
