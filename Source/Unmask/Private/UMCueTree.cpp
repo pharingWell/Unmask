@@ -17,7 +17,8 @@ UUMCueTree* UUMCueTree::CreateMVPTree(USkeletalMesh* Mesh)
 	Ranges.Add(FName("hand_r"), FRotatorRange(FRotator(-90, -90, -90), FRotator(90, 90, 90)));
 	
 	UUMCueTree* Tree = NewObject<UUMCueTree>();
-	Tree->InitCueTree(Mesh, Ranges, 1, 1, 3, 27, 1);
+	float PlayLength = 1;
+	Tree->InitCueTree(Mesh, Ranges, 1, 1, 3, FMath::Floor(UUMAnimationProducer::ResampleRate * PlayLength), PlayLength);
 	return Tree;
 }
 

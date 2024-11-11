@@ -52,8 +52,7 @@ UAnimSequence* UUMAnimationProducer::CreateSequence(const TMap<FName, FUMJointTi
 	DestSeq->SetSkeleton(AnimatedObject->GetSkeleton());
 	UUMAnimDataController& UUMController = dynamic_cast<UUMAnimDataController&>(DestSeq->GetUMController()); // LETS GOOO (Sets to custom DataController
 	UUMController.RemoveAllBoneTracks(false);
-	// set frame rate
-	int32 ResampleRate = 24;
+	
 	double SequenceLength = 1.0;
 	for (auto Joint : JointTimeline)
 	{
