@@ -7,6 +7,7 @@
 #include "AnimEncoding.h"
 #include "IAnimationDataControllerModule.h"
 #include "Animation/AnimSequenceHelpers.h"
+#include "Animation/AnimData/UMAnimDataController.h"
 
 namespace UE::Anim::Retargeting
 {
@@ -194,6 +195,7 @@ int32 UUMAnimDataModel::GetNumBoneTracks() const
 
 UAnimSequence* UUMAnimDataModel::GetAnimationSequence() const
 {
+	UE_LOG(LogScript, Error, TEXT("Get animation sequence"))
 	UObject* AnimObject = static_cast<UObject*>(FindObjectWithOuter(GetOuter(), UAnimSequence::StaticClass()));
 	return CastChecked<UAnimSequence>(AnimObject ? AnimObject : GetOuter());
 }
@@ -624,14 +626,8 @@ FGuid UUMAnimDataModel::GenerateGuid() const
 
 TScriptInterface<IAnimationDataController> UUMAnimDataModel::GetController()
 {
-	TScriptInterface<IAnimationDataController> Controller = nullptr;
-#if WITH_EDITOR
-	IAnimationDataControllerModule& ControllerModule = FModuleManager::Get().GetModuleChecked<
-		IAnimationDataControllerModule>("AnimationDataController");
-	Controller = ControllerModule.GetController();
+	UUMAnimDataController* Controller = NewObject<UUMAnimDataController>(GetTransientPackage());
 	Controller->SetModel(this);
-#endif // WITH_EDITOR
-
 	return Controller;
 }
 
