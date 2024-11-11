@@ -27,11 +27,9 @@ public:
 	UPROPERTY(transient)
 	TScriptInterface<IAnimationDataModel> ModelInterface;
 	
-	#if WITH_EDITOR
 	/** Begin IAnimationDataController overrides */
 	virtual void OpenBracket(const FText& InTitle, bool bShouldTransact = true) override;
 	virtual void CloseBracket(bool bShouldTransact = true) override;
-#endif
 
 	
 	virtual void SetModel(TScriptInterface<IAnimationDataModel> InModel) override;
@@ -92,13 +90,14 @@ public:
 	virtual bool DuplicateAttribute(const FAnimationAttributeIdentifier& AttributeIdentifier, const FAnimationAttributeIdentifier& NewAttributeIdentifier, bool bShouldTransact = true) override;
 	virtual void UpdateWithSkeleton(USkeleton* TargetSkeleton, bool bShouldTransact = true) override;
 	virtual void PopulateWithExistingModel(TScriptInterface<IAnimationDataModel> InModel) override;
-	virtual void InitializeModel() override;
+	bool GetTransformChildCurveIdentifier(FAnimationCurveIdentifier& InOutIdentifier, ETransformCurveChannel Channel,
+	                                      EVectorCurveChannel Axis);
+	virtual void InitializeModel() override {}
 protected:
 	virtual void NotifyBracketOpen() override;
 	virtual void NotifyBracketClosed() override;
 	bool SetAttributeKey_Internal(const FAnimationAttributeIdentifier& AttributeIdentifier, float Time, const void* KeyValue, const UScriptStruct* TypeStruct, bool bShouldTransact = true);
 	bool SetAttributeKeys_Internal(const FAnimationAttributeIdentifier& AttributeIdentifier, TArrayView<const float> Times, TArrayView<const void*> KeyValues, const UScriptStruct* TypeStruct, bool bShouldTransact = true);
-
 	void ResizeCurves(float NewLength, bool bInserted, float T0, float T1, bool bShouldTransact = true);
 	void ResizeAttributes(float NewLength, bool bInserted, float T0, float T1, bool bShouldTransact = true);
 	

@@ -6,12 +6,14 @@ USTRUCT(Blueprintable, BlueprintType)
 struct FRotatorRange
 {
 	GENERATED_BODY()
-	FRotatorRange() : Min(FRotator()), Max(FRotator()){}
+	
+	FRotatorRange();
 	FRotatorRange(const FRotator& StartIn, const FRotator& EndIn) : Min(StartIn), Max(EndIn){}
+	
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
-	FRotator Min;
-	UPROPERTY(Blueprintable, BlueprintReadWrite)
-	FRotator Max;
+	FRotator Min {FRotator()};
+	UPROPERTY(Blueprintable, BlueprintReadWrite) 
+	FRotator Max {FRotator()};
 };
 
 // Represents a joint's state at a given point in time
