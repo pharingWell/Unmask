@@ -15,6 +15,6 @@ class UNMASK_API UUMAnimationProducer : public UObject
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Animation|Sequencer")
-	static UAnimSequence* CreateSequence(const TMap<FName, FUMJointTimeline>& JointTimeline, USkeletalMesh* AnimatedObject);
-	static const int32 ResampleRate = 24;
+	static UAnimSequence* CreateSequence(TMap<FName, FUMJointTimeline> JointTimelineMap, USkeletalMesh* AnimatedObject);
+	static constexpr int32 ResampleRate = 24;
 };

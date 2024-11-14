@@ -341,7 +341,7 @@ IAnimationDataModel::FModelNotifier& UUMAnimDataModel::GetNotifier()
 {
 	if (!Notifier)
 	{
-		Notifier.Reset(new IAnimationDataModel::FModelNotifier(this));
+		Notifier.Reset(new FModelNotifier(this));
 	}
 
 	return *Notifier.Get();
@@ -631,9 +631,10 @@ TScriptInterface<IAnimationDataController> UUMAnimDataModel::GetController()
 	return Controller;
 }
 
-#if WITH_EDITOR
+
 FTransform ExtractTransformForKeyIndex(int32 Key, const FRawAnimSequenceTrack& TrackToExtract)
 {
+#if WITH_EDITOR
 	static const FVector DefaultScale3D = FVector(1.f);
 	const bool bHasScaleKey = TrackToExtract.ScaleKeys.Num() > 0;
 
@@ -650,6 +651,7 @@ FTransform ExtractTransformForKeyIndex(int32 Key, const FRawAnimSequenceTrack& T
 		return FTransform(FQuat(TrackToExtract.RotKeys[RotKeyIndex]), FVector(TrackToExtract.PosKeys[PosKeyIndex]),
 		                  DefaultScale3D);
 	}
+#endif
 }
 
 template <bool bInterpolateT>
@@ -658,6 +660,7 @@ void ExtractPose(const TArray<FBoneAnimationTrack>& BoneAnimationTracks,
                  const int32 KeyIndex1, const int32 KeyIndex2, float Alpha, float TimePerKey,
                  UE::Anim::Retargeting::FRetargetingScope& RetargetingScope)
 {
+#if WITH_EDITOR
 	const int32 NumAnimationTracks = BoneAnimationTracks.Num();
 	const FBoneContainer& RequiredBones = InOutPose.GetBoneContainer();
 
@@ -782,11 +785,13 @@ void ExtractPose(const TArray<FBoneAnimationTrack>& BoneAnimationTracks,
 			InOutPose[BoneIndex].Blend(InOutPose[BoneIndex], Key2Pose[BoneIndex], Alpha);
 		}
 	}
+#endif // WITH_EDITOR 
 }
 
 void UUMAnimDataModel::Evaluate(FAnimationPoseData& InOutPoseData,
                                 const UE::Anim::DataModel::FEvaluationContext& EvaluationContext) const
 {
+#if WITH_EDITOR
 	const float SequenceLength = GetPlayLength();
 
 	const double Time = EvaluationContext.SampleFrameRate.AsSeconds(EvaluationContext.SampleTime);
@@ -866,8 +871,8 @@ void UUMAnimDataModel::Evaluate(FAnimationPoseData& InOutPoseData,
 				                                        EvaluationContext.SampleTime));
 		}
 	}
+#endif
 }
-#endif // WITH_EDITOR
 
 FRichCurve* UUMAnimDataModel::GetMutableRichCurve(const FAnimationCurveIdentifier& CurveIdentifier)
 {
