@@ -2,8 +2,6 @@
 
 #include "UMCueTree.h"
 
-#include <random>
-
 float UUMCueTree::RandInRange(float Min, float Max)
 {
 	return FMath::FRand() * (Max - Min) + Min;
@@ -17,8 +15,7 @@ UUMCueTree* UUMCueTree::CreateMVPTree(USkeletalMesh* Mesh)
 	Ranges.Add(FName("hand_r"), FRotatorRange(FRotator(-90, -90, -90), FRotator(90, 90, 90)));
 	
 	UUMCueTree* Tree = NewObject<UUMCueTree>();
-	float PlayLength = 1;
-	Tree->InitCueTree(Mesh, Ranges, 1, 1, 3, FMath::Floor(UUMAnimationProducer::ResampleRate * PlayLength), PlayLength);
+	Tree->InitCueTree(Mesh, Ranges, 1, 1, 3, 3, 1);
 	return Tree;
 }
 
@@ -88,11 +85,23 @@ UAnimSequence *UUMCueTree::GenerateAnimation(const int Frames, const float PlayL
 
 			const FRotator LastPose = FRotator(Joints.Find(Name)->Timeline.Last().Transform.Rotator());
 
-			const float NewJointPitch = FMath::Clamp(RandInRange(-1, 1) * MaxPitchMovement + LastPose.Pitch, Min.Pitch, Max.Pitch);
-			const float NewJointRoll = FMath::Clamp(RandInRange(-1, 1) * MaxRollMovement + LastPose.Roll, Min.Roll, Max.Roll);
-			const float NewJointYaw = FMath::Clamp(RandInRange(-1, 1) * MaxYawMovement + LastPose.Yaw, Min.Yaw, Max.Yaw);
+			float NewJointPitch = FMath::Clamp(RandInRange(-1, 1) * MaxPitchMovement + LastPose.Pitch, Min.Pitch, Max.Pitch);
+			float NewJointRoll = FMath::Clamp(RandInRange(-1, 1) * MaxRollMovement + LastPose.Roll, Min.Roll, Max.Roll);
+			float NewJointYaw = FMath::Clamp(RandInRange(-1, 1) * MaxYawMovement + LastPose.Yaw, Min.Yaw, Max.Yaw);
+
+			/*
+			const float Magnitude = FMath::Sqrt(FMath::Square(NewJointPitch) + FMath::Square(NewJointRoll) + FMath::Square(NewJointYaw));
+			NewJointPitch /= Magnitude;
+			NewJointRoll /= Magnitude;
+			NewJointYaw /= Magnitude;
+			*/
 			
-			Joints.Find(Name)->Timeline.Add(FUMJointKey(T * DeltaTime, FTransform(FRotator(NewJointPitch, NewJointYaw, NewJointRoll))));
+			UE_LOG(LogScript, Warning, TEXT("%f, %f, %f"), NewJointPitch, NewJointYaw, NewJointRoll);
+			FTransform Transform = FTransform(FRotator(NewJointPitch, NewJointYaw, NewJointRoll));
+			Transform.NormalizeRotation();  
+			UE_LOG(LogScript, Warning, TEXT("%f, %f, %f"), Transform.Rotator().Pitch, Transform.Rotator().Yaw, Transform.Rotator().Roll);
+			
+			Joints.Find(Name)->Timeline.Add(FUMJointKey(T * DeltaTime, Transform));
 		}
 	}
 
