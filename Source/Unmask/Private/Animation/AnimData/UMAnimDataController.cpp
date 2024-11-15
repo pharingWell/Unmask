@@ -675,76 +675,73 @@ bool UUMAnimDataController::SetCurveFlags(const FAnimationCurveIdentifier& Curve
 	return false;
 }
 
-bool UUMAnimDataController::SetTransformCurveKeys(const FAnimationCurveIdentifier& CurveId, const FUMJointTimeline& JointTimeline)
+bool UUMAnimDataController::SetTransformCurveKeys(const FAnimationCurveIdentifier& CurveId, const TArray<FUMJointKey>& Timeline)
 {
 	ValidateModel();
+	
 	if (Model->FindMutableTransformCurveById(CurveId) != nullptr)
+	{
+		
+		struct FKeys
 		{
-		auto &Timeline = JointTimeline.Timeline;
-			// FBracket Bracket = ConditionalBracket(LOCTEXT("SetTransformCurveKeys_Bracket", "Setting Transform Curve Keys"), bShouldTransact);
-			
-			struct FKeys
+			FKeys(int32 NumKeys)
 			{
-				FKeys(int32 NumKeys)
-				{
-					for (int32 ChannelIndex = 0; ChannelIndex < 3; ++ChannelIndex)
-					{
-						ChannelKeys[ChannelIndex].SetNum(NumKeys);
-					}
-				}
-
-				TArray<FRichCurveKey> ChannelKeys[3];
-			};
-
-			FKeys TranslationKeys(Timeline.Num());
-			FKeys RotationKeys(Timeline.Num());
-			FKeys ScaleKeys(Timeline.Num());
-
-			FKeys* SubCurveKeys[3] = { &TranslationKeys, &RotationKeys, &ScaleKeys };
-
-			// Generate the curve keys
-			for (int32 KeyIndex = 0; KeyIndex < Timeline.Num(); ++KeyIndex)
-			{
-				const FTransform& Value = Timeline[KeyIndex].Transform;
-				const float& Time = Timeline[KeyIndex].Time;
-
-				const FVector Translation = Value.GetLocation();
-				const FVector Rotation = Value.GetRotation().Euler();
-				const FVector Scale = Value.GetScale3D();
-
-				auto SetKey = [Time, KeyIndex](FKeys& Key, const FVector& Vector)
-				{
-					for (int32 ChannelIndex = 0; ChannelIndex < 3; ++ChannelIndex)
-					{
-						Key.ChannelKeys[ChannelIndex][KeyIndex] = FRichCurveKey(Time, static_cast<float>(Vector[ChannelIndex]));
-					}
-				};
-
-				SetKey(TranslationKeys, Translation);
-				SetKey(RotationKeys, Rotation);
-				SetKey(ScaleKeys, Scale);
-			}
-			
-			for (int32 SubCurveIndex = 0; SubCurveIndex < 3; ++SubCurveIndex)
-			{
-				const ETransformCurveChannel Channel = static_cast<ETransformCurveChannel>(SubCurveIndex);
-				const FKeys* CurveKeys = SubCurveKeys[SubCurveIndex];
 				for (int32 ChannelIndex = 0; ChannelIndex < 3; ++ChannelIndex)
 				{
-					const EVectorCurveChannel Axis = static_cast<EVectorCurveChannel>(ChannelIndex);
-					FAnimationCurveIdentifier TargetCurveIdentifier = CurveId;
-					GetTransformChildCurveIdentifier(TargetCurveIdentifier, Channel, Axis);
-					SetCurveKeys(TargetCurveIdentifier, CurveKeys->ChannelKeys[ChannelIndex], false);
+					ChannelKeys[ChannelIndex].SetNum(NumKeys);
 				}
 			}
 
-			return true;
-		}
-		else
+			TArray<FRichCurveKey> ChannelKeys[3];
+		};
+
+		FKeys TranslationKeys(Timeline.Num());
+		FKeys RotationKeys(Timeline.Num());
+		FKeys ScaleKeys(Timeline.Num());
+
+		FKeys* SubCurveKeys[3] = { &TranslationKeys, &RotationKeys, &ScaleKeys };
+
+		// Generate the curve keys
+		for (int32 KeyIndex = 0; KeyIndex < Timeline.Num(); ++KeyIndex)
 		{
-			UE_LOG(LogScript, Warning, TEXT("Unable to find transform curve: %s"), ToCStr(CurveId.CurveName.ToString()));
+			const FTransform& Value = Timeline[KeyIndex].Transform;
+			const float& Time = Timeline[KeyIndex].Time;
+			//UE_LOG(LogScript, Warning, TEXT("Key #%d: (post) (T:%f, V:%s)"), KeyIndex, Time, *Value.ToString())
+			const FVector Translation = Value.GetLocation();
+			const FVector Rotation = Value.GetRotation().Euler();
+			const FVector Scale = Value.GetScale3D();
+
+			auto SetKey = [Time, KeyIndex](FKeys& Key, const FVector& Vector)
+			{
+				for (int32 ChannelIndex = 0; ChannelIndex < 3; ++ChannelIndex)
+				{
+					Key.ChannelKeys[ChannelIndex][KeyIndex] = FRichCurveKey(Time, static_cast<float>(Vector[ChannelIndex]));
+				}
+				
+			};
+
+			SetKey(TranslationKeys, Translation);
+			SetKey(RotationKeys, Rotation);
+			SetKey(ScaleKeys, Scale);
+		}
+		
+		for (int32 SubCurveIndex = 0; SubCurveIndex < 3; ++SubCurveIndex)
+		{
+			const ETransformCurveChannel Channel = static_cast<ETransformCurveChannel>(SubCurveIndex);
+			const FKeys* CurveKeys = SubCurveKeys[SubCurveIndex];
+			for (int32 ChannelIndex = 0; ChannelIndex < 3; ++ChannelIndex)
+			{
+				const EVectorCurveChannel Axis = static_cast<EVectorCurveChannel>(ChannelIndex);
+				FAnimationCurveIdentifier TargetCurveIdentifier = CurveId;
+				UAnimationCurveIdentifierExtensions::GetTransformChildCurveIdentifier(TargetCurveIdentifier, Channel, Axis);
+				SetCurveKeys(TargetCurveIdentifier, CurveKeys->ChannelKeys[ChannelIndex], false);
+				
+			}
 		}
 
+		return true;
+	}
+	UE_LOG(LogScript, Warning, TEXT("Unable to find transform curve: %s"), ToCStr(CurveId.CurveName.ToString()))
 	return false;	
 }
 
@@ -1388,6 +1385,57 @@ void UUMAnimDataController::RemoveAllBoneTracks(bool bShouldTransact /*= true*/)
 			RemoveBoneTrack(TrackName, bShouldTransact);
 		}
 	}	
+}
+
+
+bool UUMAnimDataController::SetBoneTrackKeys(FName BoneName, const TArray<FUMJointKey>& Keys)
+{
+	if (!ModelInterface->GetAnimationSequence())
+	{
+		return false;
+	}
+
+	// Validate key format
+
+	if (Keys.Num() > 0)
+	{
+		if (FBoneAnimationTrack* TrackPtr = Model->FindMutableBoneTrackByName(BoneName))
+		{
+			// FTransaction Transaction = ConditionalTransaction(LOCTEXT("SetTrackKeysTransaction", "Setting Animation Data Track keys"), bShouldTransact);
+
+			TArray<FTransform> BoneTransforms;
+			Model->GetBoneTrackTransforms(BoneName, BoneTransforms);
+			// ConditionalAction<UE::Anim::FSetTrackKeysAction>(bShouldTransact, BoneName, BoneTransforms);
+
+			TrackPtr->InternalTrackData.PosKeys.SetNum(Keys.Num());
+			TrackPtr->InternalTrackData.ScaleKeys.SetNum(Keys.Num());
+			TrackPtr->InternalTrackData.RotKeys.SetNum(Keys.Num());
+			for(int32 KeyIndex = 0; KeyIndex<Keys.Num(); KeyIndex++)
+			{
+				const FTransform &Transform = Keys[KeyIndex].Transform;
+				TrackPtr->InternalTrackData.PosKeys[KeyIndex] = FVector3f(Transform.GetTranslation());
+				TrackPtr->InternalTrackData.RotKeys[KeyIndex] = FQuat4f(Transform.GetRotation());
+				TrackPtr->InternalTrackData.ScaleKeys[KeyIndex] = FVector3f(Transform.GetScale3D());
+			}
+
+			FAnimationTrackChangedPayload Payload;
+			Payload.Name = BoneName;
+
+			Model->GetNotifier().Notify(EAnimDataModelNotifyType::TrackChanged, Payload);
+
+			return true;
+		}
+		else
+		{
+			UE_LOG(LogScript, Warning, TEXT("Track with name %s does not exist"), ToCStr(BoneName.ToString()));
+		}
+	}
+	else
+	{
+		UE_LOG(LogScript, Error, TEXT("MissingTrackKeyDataError: Missing track key data, number of keys %d"), Keys.Num());
+	}
+
+	return false;
 }
 
 bool UUMAnimDataController::SetBoneTrackKeys(FName BoneName, const TArray<FVector>& PositionalKeys, const TArray<FQuat>& RotationalKeys, const TArray<FVector>& ScalingKeys, bool bShouldTransact /*= true*/)

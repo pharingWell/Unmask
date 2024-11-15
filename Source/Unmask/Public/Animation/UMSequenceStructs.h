@@ -13,9 +13,9 @@ struct FRotatorRange
 	FRotatorRange(const FRotator& StartIn, const FRotator& EndIn) : Min(StartIn), Max(EndIn){}
 	
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
-	FRotator Min {FRotator()};
+	FRotator Min {FRotator(0.f)};
 	UPROPERTY(Blueprintable, BlueprintReadWrite) 
-	FRotator Max {FRotator()};
+	FRotator Max {FRotator(0.f)};
 };
 
 // Represents a joint's state at a given point in time
