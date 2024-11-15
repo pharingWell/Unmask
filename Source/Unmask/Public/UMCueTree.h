@@ -25,23 +25,24 @@ UCLASS()
 class UNMASK_API UUMCueTree : public UObject
 {
 	GENERATED_BODY()
-	
-	protected:
-		UPROPERTY()
-		TArray<FUMCueTreeNode> Nodes;
-		UPROPERTY()
-		USkeletalMesh *SkeletalMesh;
-		UPROPERTY()
-		TMap<FName, FRotatorRange> Ranges;
-		UFUNCTION()
-		UAnimSequence *GenerateAnimation(const int Frames, const float PlayLength);
+public:
+	UPROPERTY(Blueprintable, BlueprintReadOnly)
+	TArray<FUMCueTreeNode> Nodes;
+protected:
+	UPROPERTY()
+	USkeletalMesh *SkeletalMesh;
+	UPROPERTY()
+	TMap<FName, FRotatorRange> Ranges;
+	UFUNCTION()
+	UAnimSequence *GenerateAnimation(const int Frames, const float PlayLength);
 
 	UUMCueTree();
 	void InitCueTree(USkeletalMesh *InitSkeletalMesh, const TMap<FName, FRotatorRange> InitRanges, const int AvgChildren, const int MinDepth, const int MaxDepth, const int Frames, const float PlayLength);
-	UFUNCTION(BlueprintCallable, Category = "CueTree")
+	UFUNCTION(BlueprintPure, Category = "CueTree")
 	FUMCueTreeNode GetRoot();
-	UFUNCTION(BlueprintCallable, Category = "CueTree")
+	UFUNCTION(BlueprintPure, Category = "CueTree")
 	static float RandInRange(float Min, float Max);
 	UFUNCTION(BlueprintCallable, Category = "CueTree")
 	static UUMCueTree *CreateMVPTree(USkeletalMesh *Mesh);
+	
 };

@@ -15,6 +15,8 @@
 
 static int Counter = 0;
 
+DEFINE_LOG_CATEGORY(LogAnimProducer);
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(Test_AnimationDetection, "Unmask.Tests.AnimationSystem.Producer",
 								 EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
@@ -27,27 +29,29 @@ bool Test_AnimationDetection::RunTest(const FString& Parameters)
 UAnimSequence* UUMAnimationProducer::CreateSequence(TMap<FName, FUMJointTimeline> JointTimelineMap,
 												   USkeletalMesh* AnimatedObject)
 {
-	FString SequenceName = "PosedSequence";
-	// See if this sequence already exists.
-	FString ParentPath = FString::Printf(TEXT("%s/%s"), *FPackageName::GetLongPackagePath(*AnimatedObject->GetOutermost()->GetName()), *SequenceName);
 	
+	FString SequenceName = FString("PosedSequence") + FString::FromInt(++AnimationNumber);
+	UE_LOG(LogAnimProducer, Log, TEXT("Animation: %s"), *SequenceName)
+	// See if this sequence already exists.
+	FString ParentPath = FString::Printf(TEXT("%s/%s"), *FPackageName::GetLongPackagePath(*AnimatedObject->GetPackage()->GetName()), *SequenceName);
 	//Import a new sequence
-	UPackage *ParentPackage = LoadPackage(nullptr, *ParentPath, LOAD_Verify | LOAD_NoWarn);
-	if (ParentPackage != nullptr) {
-				ParentPackage->FullyLoad();
-	} else {
-		ParentPackage = CreatePackage(*ParentPath);
-	}
-	UObject* Object = LoadObject<UObject>(ParentPackage, *SequenceName, NULL, LOAD_NoWarn, NULL);
-	UUMAnimSequence *DestSeq = Cast<UUMAnimSequence>(Object);
-	if(DestSeq == nullptr)
-	{
-		// If not, create new one now.
-		DestSeq = NewObject<UUMAnimSequence>(ParentPackage, *SequenceName, RF_Public | RF_Standalone | RF_Transient);
-		// Notify the asset registry
-		FAssetRegistryModule::AssetCreated(DestSeq);
-	}
-	DestSeq->ResetAnimation();
+	//UPackage * ParentPackage = LoadPackage(nullptr, *ParentPath, LOAD_Verify | LOAD_NoWarn);
+	UPackage *ParentPackage = CreatePackage(*ParentPath);
+	ParentPackage->FullyLoad();
+	// if (ParentPackage != nullptr) {
+	// 	ParentPackage->FullyLoad();
+	// } else {
+	// 	
+	// }
+	//UObject* Object = LoadObject<UObject>(ParentPackage, *SequenceName, NULL, LOAD_NoWarn, NULL);
+	//UUMAnimSequence *DestSeq = Cast<UUMAnimSequence>(Object);
+	//if(DestSeq == nullptr)
+	//{
+	// If not, create new one now.
+	UUMAnimSequence *DestSeq = NewObject<UUMAnimSequence>(ParentPackage, *SequenceName, RF_Public | RF_Standalone | RF_Transient);
+	// Notify the asset registry
+	FAssetRegistryModule::AssetCreated(DestSeq);
+	//}
 	DestSeq->SetSkeleton(AnimatedObject->GetSkeleton());
 	UUMAnimDataController& UUMController = dynamic_cast<UUMAnimDataController&>(DestSeq->GetUMController()); // LETS GOOO (Sets to custom DataController
 	UUMController.RemoveAllBoneTracks(false);
@@ -61,6 +65,7 @@ UAnimSequence* UUMAnimationProducer::CreateSequence(TMap<FName, FUMJointTimeline
 			SequenceLength = FGenericPlatformMath::Max<int32>(SequenceLength, Timeline.Last().Time);
 		}
 	}
+	SequenceLength = FGenericPlatformMath::CeilToDouble(SequenceLength);
 	const FFrameRate ResampleFrameRate(ResampleRate, 1);
 	UUMController.SetFrameRate(ResampleFrameRate, false);
 	const FFrameNumber NumberOfFrames = ResampleFrameRate.AsFrameNumber(SequenceLength);
@@ -69,28 +74,20 @@ UAnimSequence* UUMAnimationProducer::CreateSequence(TMap<FName, FUMJointTimeline
 	for (auto &Joint : JointTimelineMap)
 	{
 		FName &BoneName = Joint.Key;
-		int i = 0;
-		for (auto &[Time, Transform] : Joint.Value.Timeline)
-		{
-			//UE_LOG(LogScript, Warning, TEXT("Key #%d: (pre) (T:%f, V:%s)"), i, Time, *Transform.ToString())
-			//Transform.NormalizeRotation();
-			UE_LOG(LogScript, Warning, TEXT("Key #%d: (pre) (T:%f, V:%s)"), i, Time, *Transform.ToString())
-			i++;
-		}
-		FName TrackName = FName(BoneName.ToString() + TEXT("_Curve"));
+		FName TrackName =  BoneName; //FName(BoneName.ToString() + TEXT("_Curve"));
 		const FAnimationCurveIdentifier CurveId(TrackName, ERawCurveTrackTypes::RCT_Transform);
 		UUMController.AddCurve(CurveId, EAnimAssetCurveFlags::AACF_NONE, false);
-		UUMController.AddBoneCurve(BoneName, false);
-		UUMController.SetBoneTrackKeys(BoneName, Joint.Value.Timeline);
-		UE_LOG(LogScript, Warning, TEXT("Joint: %s, Len=%d"), *BoneName.ToString(), Joint.Value.Timeline.Num())
+		UUMController.AddBoneCurve(TrackName, false);
+		//UUMController.SetBoneTrackKeys(BoneName, Joint.Value.Timeline);
+		// UE_LOG(LogAnimProducer, Log, TEXT("Joint: %s, Len=%d"), *BoneName.ToString(), Joint.Value.Timeline.Num())
+		UUMController.NotifyPopulated();
+		UE_LOG(LogAnimProducer, Log, TEXT("Bone: %s"), *TrackName.ToString())
 		UUMController.SetTransformCurveKeys(CurveId, Joint.Value.Timeline);
-		FFrameTime FrameTime = FFrameTime(1 + ResampleRate * 3);
-		FTransform TransformAt0 = UUMController.GetModel()->EvaluateBoneTrackTransform(TrackName, FrameTime, EAnimInterpolationType::Linear);
-		UE_LOG(LogScript, Warning, TEXT("Transform evaluated for BoneTrack %s: [%s]"), *TrackName.ToString(), *TransformAt0.ToString())
+		const FTransformCurve &CurveTransforms = UUMController.Model->GetTransformCurve(CurveId);
 		for (int frame = 0; frame < NumberOfFrames.Value; frame++)
 		{
-			const FTransform &Transform = UUMController.Model->GetBoneTrackTransform(TrackName, FFrameNumber(frame));
-			UE_LOG(LogScript, Warning, TEXT("Frame #%.1d: %s"), ++frame, *Transform.ToString())
+			const FTransform &CurveTransform = CurveTransforms.Evaluate(frame/static_cast<double>(ResampleRate), 1.f);
+			UE_LOG(LogAnimProducer, Log, TEXT("Transform Frame #%02d: %s"), frame, *CurveTransform.ToString())
 		}
 	}
 	
@@ -98,6 +95,6 @@ UAnimSequence* UUMAnimationProducer::CreateSequence(TMap<FName, FUMJointTimeline
 	for (TObjectIterator<USkeletalMeshComponent> Iter; Iter; ++Iter)
 	{
 	 	FComponentReregisterContext ReregisterContext(*Iter);
-	 }
+	}
 	return DestSeq;
 }

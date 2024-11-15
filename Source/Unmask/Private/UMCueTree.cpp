@@ -31,7 +31,7 @@ UUMCueTree::UUMCueTree()
 }
 
 void UUMCueTree::InitCueTree(USkeletalMesh *InitSkeletalMesh, const TMap<FName, FRotatorRange> InitRanges,
-	const int AvgChildren, const int MinDepth, const int MaxDepth, const int Frames, const float PlayLength)
+	const int AvgChildren, const int MinDepth, const int MaxDepth, const int Keys, const float PlayLength)
 {
 	this->Ranges = InitRanges;
 	this->SkeletalMesh = InitSkeletalMesh;
@@ -42,7 +42,7 @@ void UUMCueTree::InitCueTree(USkeletalMesh *InitSkeletalMesh, const TMap<FName, 
 	ToBeExpanded.Enqueue(0);
 	while (!ToBeExpanded.IsEmpty())
 	{
-		int ParentNodeIndex;
+		int ParentNodeIndex = 0;
 		ToBeExpanded.Dequeue(ParentNodeIndex);
 		if (Nodes[ParentNodeIndex].Depth >= MaxDepth) continue;
 		int ChildrenCount = FMath::RandRange(0, 2 * AvgChildren); // make this a normal distribution
@@ -51,7 +51,7 @@ void UUMCueTree::InitCueTree(USkeletalMesh *InitSkeletalMesh, const TMap<FName, 
 		{
 			FUMCueTreeNode ChildNode;
 			ChildNode.Depth = Nodes[ParentNodeIndex].Depth + 1;
-			ChildNode.Animation = GenerateAnimation(Frames, PlayLength);
+			ChildNode.Animation = GenerateAnimation(Keys, PlayLength);
 			int ChildNodeIndex = Nodes.Add(ChildNode);
 			Nodes[ParentNodeIndex].Children.Add(ChildNodeIndex);
 			ToBeExpanded.Enqueue(ChildNodeIndex);
@@ -59,9 +59,9 @@ void UUMCueTree::InitCueTree(USkeletalMesh *InitSkeletalMesh, const TMap<FName, 
 	}
 }
 
-UAnimSequence *UUMCueTree::GenerateAnimation(const int Frames, const float PlayLength)
+UAnimSequence *UUMCueTree::GenerateAnimation(const int Keys, const float PlayLength)
 {
-	float DeltaTime = PlayLength / Frames;
+	float DeltaTime = PlayLength / Keys;
 	TMap<FName, FUMJointTimeline> Joints;
 	
 	for (TTuple<FName, FRotatorRange> Range : this->Ranges)
@@ -72,7 +72,7 @@ UAnimSequence *UUMCueTree::GenerateAnimation(const int Frames, const float PlayL
 		Joints.Add(Range.Key, JointTimeline);
 	}
 	
-	for (int T = 1; T < Frames; T++)
+	for (int T = 1; T < Keys; T++)
 	{
 		for (auto [Name, Range] : this->Ranges)
 		{
@@ -88,22 +88,17 @@ UAnimSequence *UUMCueTree::GenerateAnimation(const int Frames, const float PlayL
 			float NewJointPitch = FMath::Clamp(RandInRange(-1, 1) * MaxPitchMovement + LastPose.Pitch, Min.Pitch, Max.Pitch);
 			float NewJointRoll = FMath::Clamp(RandInRange(-1, 1) * MaxRollMovement + LastPose.Roll, Min.Roll, Max.Roll);
 			float NewJointYaw = FMath::Clamp(RandInRange(-1, 1) * MaxYawMovement + LastPose.Yaw, Min.Yaw, Max.Yaw);
-
-			/*
-			const float Magnitude = FMath::Sqrt(FMath::Square(NewJointPitch) + FMath::Square(NewJointRoll) + FMath::Square(NewJointYaw));
-			NewJointPitch /= Magnitude;
-			NewJointRoll /= Magnitude;
-			NewJointYaw /= Magnitude;
-			*/
 			
-			UE_LOG(LogScript, Warning, TEXT("%f, %f, %f"), NewJointPitch, NewJointYaw, NewJointRoll);
 			FTransform Transform = FTransform(FRotator(NewJointPitch, NewJointYaw, NewJointRoll));
-			Transform.NormalizeRotation();  
-			UE_LOG(LogScript, Warning, TEXT("%f, %f, %f"), Transform.Rotator().Pitch, Transform.Rotator().Yaw, Transform.Rotator().Roll);
 			
 			Joints.Find(Name)->Timeline.Add(FUMJointKey(T * DeltaTime, Transform));
 		}
 	}
-
-	return UUMAnimationProducer::CreateSequence(Joints, this->SkeletalMesh);
+	auto Return = UUMAnimationProducer::CreateSequence(Joints, this->SkeletalMesh);
+	if(!IsValid(Return))
+	{
+		UE_LOG(LogAnimProducer, Error, TEXT("Last produced AnimSequence is invalid"));
+		return nullptr;
+	}
+	return Return;
 }
