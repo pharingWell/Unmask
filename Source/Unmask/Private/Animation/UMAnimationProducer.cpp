@@ -41,16 +41,14 @@ UAnimSequence* UUMAnimationProducer::CreateSequence(TMap<FName, FUMJointTimeline
 	FString ParentPath = FString::Printf(TEXT("%s/%s"), *FPackageName::GetLongPackagePath(FString(OuterPackage->GetName())), *SequenceName);
 	UPackage *ParentPackage = CreatePackage(*ParentPath);
 	ParentPackage->FullyLoad();
+	
 	UUMAnimSequence *DestSeq = NewObject<UUMAnimSequence>(ParentPackage, *SequenceName, RF_Public | RF_Standalone);
 	FAssetRegistryModule::AssetCreated(DestSeq);
 	DestSeq->SetSkeleton(AnimatedObject->GetSkeleton());
-	
-	//IAnimationDataController& UUMController = DestSeq->GetController();
-	//UUMController.InitializeModel();
-
-	
+	OuterPackage->FullyLoad();
 	UUMAnimDataController& UUMController = dynamic_cast<UUMAnimDataController&>(DestSeq->GetUMController()); // LETS GOOO (Sets to custom DataController
 	UUMController.RemoveAllBoneTracks(false);
+	
 	double SequenceLength = 1.0;
 	for (auto Joint : JointTimelineMap)
 	{
@@ -61,11 +59,13 @@ UAnimSequence* UUMAnimationProducer::CreateSequence(TMap<FName, FUMJointTimeline
 		}
 	}
 	SequenceLength = FGenericPlatformMath::CeilToDouble(SequenceLength);
+	
 	const FFrameRate ResampleFrameRate(ResampleRate, 1);
 	UUMController.SetFrameRate(ResampleFrameRate, false);
 	const FFrameNumber NumberOfFrames = ResampleFrameRate.AsFrameNumber(SequenceLength);
 	UUMController.SetNumberOfFrames(FGenericPlatformMath::Max<int32>(NumberOfFrames.Value, 1), false);
 	UUMController.NotifyPopulated();
+	
 	for (auto &Joint : JointTimelineMap)
 	{
 		FName &BoneName = Joint.Key;
@@ -75,8 +75,7 @@ UAnimSequence* UUMAnimationProducer::CreateSequence(TMap<FName, FUMJointTimeline
 			continue;
 		}
 		Timeline.Sort();
-		FName TrackName =  BoneName; 
-		UUMController.AddBoneCurve(TrackName, false);
+		UUMController.AddBoneCurve(BoneName, false);
 		UUMController.NotifyPopulated();
 		FReferenceSkeleton RefSkeleton = AnimatedObject->GetSkeleton()->GetReferenceSkeleton();
 		const int Index = RefSkeleton.FindBoneIndex(BoneName);
@@ -90,7 +89,7 @@ UAnimSequence* UUMAnimationProducer::CreateSequence(TMap<FName, FUMJointTimeline
 		TArray<FVector> TranslationOut;
 		TArray<FQuat> RotationOut;
 		TArray<FVector> ScaleOut;
-		UE_LOG(LogAnimProducer, Log, TEXT("Bone: %s"), *TrackName.ToString())
+		UE_LOG(LogAnimProducer, Log, TEXT("Bone: %s"), *BoneName.ToString())
 		for (int frame = 0; frame < NumberOfFrames.Value; frame++)
 		{
 			const FTransform &Transform = CurveTransforms.Evaluate(frame/static_cast<double>(ResampleRate), 1.f);

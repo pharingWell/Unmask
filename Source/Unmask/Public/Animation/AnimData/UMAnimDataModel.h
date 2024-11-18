@@ -65,9 +65,12 @@ public:
 	virtual UAnimSequence* GetAnimationSequence() const override;
 	virtual FAnimDataModelModifiedEvent& GetModifiedEvent() override { return ModifiedEvent; }
 	virtual FGuid GenerateGuid() const override;
-#if WITH_EDITOR
-	virtual void Evaluate(FAnimationPoseData& InOutPoseData, const UE::Anim::DataModel::FEvaluationContext& EvaluationContext) const override;
-#endif
+
+	virtual void Evaluate(FAnimationPoseData& InOutPoseData, const UE::Anim::DataModel::FEvaluationContext& EvaluationContext) const
+	#if WITH_EDITOR
+	override
+	#endif
+	;
 	virtual TScriptInterface<IAnimationDataController> GetController() override;
 	virtual bool HasBeenPopulated() const override { return bPopulated; }
 	virtual void IterateBoneKeys(const FName& BoneName, TFunction<bool(const FVector3f& Pos, const FQuat4f&, const FVector3f, const FFrameNumber&)> IterationFunction) const override;

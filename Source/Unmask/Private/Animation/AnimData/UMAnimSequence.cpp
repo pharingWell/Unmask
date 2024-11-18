@@ -3,33 +3,43 @@
 
 #include "Animation/AnimData/UMAnimSequence.h"
 #include "Animation/AnimSequenceBase.h"
+#include "Animation/UMAnimationProducer.h"
 #include "Animation/AnimData/UMAnimDataController.h"
 #include "Animation/AnimData/UMAnimDataModel.h"
 
 
 void UUMAnimSequence::CorrectModel()
 {
-	checkf(Controller, TEXT("Failed to create AnimationDataController"));
-	UClass* TargetClass = UUMAnimDataModel::StaticClass();
-	UObject* ClassDataModel = NewObject<UObject>(this, TargetClass, TargetClass->GetFName()); //Based off of AnimSequenceBase's Create Model
-	DataModelInterface = ClassDataModel;
-	BindToModelModificationEvent();
 	if(!bModelCorrected)
+	{
+		UClass* TargetClass = UUMAnimDataModel::StaticClass();
+		UObject* ClassDataModel = NewObject<UObject>(this, TargetClass, TargetClass->GetFName()); //Based off of AnimSequenceBase's Create Model
+		DataModelInterface = ClassDataModel;
+		BindToModelModificationEvent();
+		bModelCorrected = true;
+	}
+	if(!bControllerCorrected)
 	{
 		UUMAnimDataController *ControllerObj = NewObject<UUMAnimDataController>(GetTransientPackage());
 		Controller = TScriptInterface<UUMAnimDataController>(ControllerObj);
 		Controller->SetModel(DataModelInterface);
-		bModelCorrected = true;
+		bControllerCorrected = true;
+		checkf(Controller, TEXT("Failed to create AnimationDataController"));
 	}
 	ensureAlways(Controller->GetModelInterface() == DataModelInterface);
-	
-	if (USkeleton* MySkeleton = GetSkeleton()) //PreloadSkeleton
+	if(bFirstCorrection)
 	{
-		if (FLinkerLoad* SkeletonLinker = MySkeleton->GetLinker())
+		if (USkeleton* MySkeleton = GetSkeleton()) //PreloadSkeleton
 		{
-			SkeletonLinker->Preload(MySkeleton);
+			if (FLinkerLoad* SkeletonLinker = MySkeleton->GetLinker())
+			{
+				SkeletonLinker->Preload(MySkeleton);
+			}
+			MySkeleton->ConditionalPostLoad();
+		} else {
+			UE_LOG(LogAnimProducer, Warning, TEXT("No skeleton for UMAnimSequence"))	
 		}
-		MySkeleton->ConditionalPostLoad();
+		bFirstCorrection = false;
 	}
 	
 }
@@ -45,11 +55,11 @@ void UUMAnimSequence::PostLoad()
 
 IAnimationDataController& UUMAnimSequence::GetUMController()
 {
-	ValidateModel();
 	if(!bModelCorrected)
 	{
 		CorrectModel();
 	}
+	ValidateModel();
 	return *Controller;
 }
 
