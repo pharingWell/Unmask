@@ -651,6 +651,8 @@ FTransform ExtractTransformForKeyIndex(int32 Key, const FRawAnimSequenceTrack& T
 		return FTransform(FQuat(TrackToExtract.RotKeys[RotKeyIndex]), FVector(TrackToExtract.PosKeys[PosKeyIndex]),
 		                  DefaultScale3D);
 	}
+#else
+	return FTransform();
 #endif
 }
 
@@ -787,9 +789,7 @@ void ExtractPose(const TArray<FBoneAnimationTrack>& BoneAnimationTracks,
 	}
 #endif // WITH_EDITOR 
 }
-
-void UUMAnimDataModel::Evaluate(FAnimationPoseData& InOutPoseData,
-                                const UE::Anim::DataModel::FEvaluationContext& EvaluationContext) const
+void UUMAnimDataModel::Evaluate(FAnimationPoseData& InOutPoseData, const UE::Anim::DataModel::FEvaluationContext& EvaluationContext) const
 {
 #if WITH_EDITOR
 	const float SequenceLength = GetPlayLength();
@@ -871,6 +871,7 @@ void UUMAnimDataModel::Evaluate(FAnimationPoseData& InOutPoseData,
 				                                        EvaluationContext.SampleTime));
 		}
 	}
+#else
 #endif
 }
 

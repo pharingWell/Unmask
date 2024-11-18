@@ -733,7 +733,7 @@ bool UUMAnimDataController::SetTransformCurveKeys(const FAnimationCurveIdentifie
 			{
 				const EVectorCurveChannel Axis = static_cast<EVectorCurveChannel>(ChannelIndex);
 				FAnimationCurveIdentifier TargetCurveIdentifier = CurveId;
-				UAnimationCurveIdentifierExtensions::GetTransformChildCurveIdentifier(TargetCurveIdentifier, Channel, Axis);
+				GetTransformChildCurveIdentifier(TargetCurveIdentifier, Channel, Axis);
 				SetCurveKeys(TargetCurveIdentifier, CurveKeys->ChannelKeys[ChannelIndex], false);
 				
 			}

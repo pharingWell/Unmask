@@ -47,4 +47,6 @@ protected:
 
 private:
 	bool bModelCorrected = false;
+	bool bControllerCorrected = false;
+	bool bFirstCorrection = true;
 };
