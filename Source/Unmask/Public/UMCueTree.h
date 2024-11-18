@@ -39,7 +39,7 @@ protected:
 	UUMCueTree();
 	void InitCueTree(USkeletalMesh *InitSkeletalMesh, const TMap<FName, FRotatorRange> InitRanges, const int AvgChildren, const int MinDepth, const int MaxDepth, const int Frames, const float PlayLength);
 	UFUNCTION(BlueprintPure, Category = "CueTree")
-	FUMCueTreeNode GetRoot();
+	FUMCueTreeNode GetRoot() { return Nodes[0]; }
 	UFUNCTION(BlueprintPure, Category = "CueTree")
 	static float RandInRange(float Min, float Max);
 	UFUNCTION(BlueprintCallable, Category = "CueTree")

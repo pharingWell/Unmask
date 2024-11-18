@@ -19,11 +19,6 @@ UUMCueTree* UUMCueTree::CreateMVPTree(USkeletalMesh* Mesh)
 	return Tree;
 }
 
-FUMCueTreeNode UUMCueTree::GetRoot()
-{
-	return this->Nodes[0];
-}
-
 UUMCueTree::UUMCueTree()
 {
 	this->Ranges = TMap<FName, FRotatorRange>();
@@ -90,6 +85,7 @@ UAnimSequence *UUMCueTree::GenerateAnimation(const int Keys, const float PlayLen
 			float NewJointYaw = FMath::Clamp(RandInRange(-1, 1) * MaxYawMovement + LastPose.Yaw, Min.Yaw, Max.Yaw);
 			
 			FTransform Transform = FTransform(FRotator(NewJointPitch, NewJointYaw, NewJointRoll));
+			Transform.SetTranslation(Joints.Find(Name)->Timeline.Last().Transform.GetTranslation());
 			
 			Joints.Find(Name)->Timeline.Add(FUMJointKey(T * DeltaTime, Transform));
 		}

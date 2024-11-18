@@ -78,7 +78,7 @@ UAnimSequence* UUMAnimationProducer::CreateSequence(TMap<FName, FUMJointTimeline
 		const FAnimationCurveIdentifier CurveId(TrackName, ERawCurveTrackTypes::RCT_Transform);
 		UUMController.AddCurve(CurveId, EAnimAssetCurveFlags::AACF_NONE, false);
 		UUMController.AddBoneCurve(TrackName, false);
-		//UUMController.SetBoneTrackKeys(BoneName, Joint.Value.Timeline);
+		UUMController.SetBoneTrackKeys(BoneName, Joint.Value.Timeline);
 		// UE_LOG(LogAnimProducer, Log, TEXT("Joint: %s, Len=%d"), *BoneName.ToString(), Joint.Value.Timeline.Num())
 		UUMController.NotifyPopulated();
 		UE_LOG(LogAnimProducer, Log, TEXT("Bone: %s"), *TrackName.ToString())
