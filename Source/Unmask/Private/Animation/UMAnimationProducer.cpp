@@ -29,33 +29,28 @@ bool Test_AnimationDetection::RunTest(const FString& Parameters)
 UAnimSequence* UUMAnimationProducer::CreateSequence(TMap<FName, FUMJointTimeline> JointTimelineMap,
 												   USkeletalMesh* AnimatedObject)
 {
+
+	// for it to show up in the editor, it needs TWO packages
 	
+	FString SUBFOLDER = FString("UM_MVP/"); 
+	FString PACKAGE_NAME = FString("SequencePackage");
+	FString PackageName = FString("/Game/") + SUBFOLDER + PACKAGE_NAME;
 	FString SequenceName = FString("PosedSequence") + FString::FromInt(++AnimationNumber);
-	UE_LOG(LogAnimProducer, Log, TEXT("Animation: %s"), *SequenceName)
-	// See if this sequence already exists.
-	FString ParentPath = FString::Printf(TEXT("%s/%s"), *FPackageName::GetLongPackagePath(*AnimatedObject->GetPackage()->GetName()), *SequenceName);
-	//Import a new sequence
-	//UPackage * ParentPackage = LoadPackage(nullptr, *ParentPath, LOAD_Verify | LOAD_NoWarn);
+	UPackage *OuterPackage = CreatePackage(*PackageName);
+	FString const PackageFileName = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
+	FString ParentPath = FString::Printf(TEXT("%s/%s"), *FPackageName::GetLongPackagePath(FString(OuterPackage->GetName())), *SequenceName);
 	UPackage *ParentPackage = CreatePackage(*ParentPath);
 	ParentPackage->FullyLoad();
-	// if (ParentPackage != nullptr) {
-	// 	ParentPackage->FullyLoad();
-	// } else {
-	// 	
-	// }
-	//UObject* Object = LoadObject<UObject>(ParentPackage, *SequenceName, NULL, LOAD_NoWarn, NULL);
-	//UUMAnimSequence *DestSeq = Cast<UUMAnimSequence>(Object);
-	//if(DestSeq == nullptr)
-	//{
-	// If not, create new one now.
-	UUMAnimSequence *DestSeq = NewObject<UUMAnimSequence>(ParentPackage, *SequenceName, RF_Public | RF_Standalone | RF_Transient);
-	// Notify the asset registry
+	UUMAnimSequence *DestSeq = NewObject<UUMAnimSequence>(ParentPackage, *SequenceName, RF_Public | RF_Standalone);
 	FAssetRegistryModule::AssetCreated(DestSeq);
-	//}
 	DestSeq->SetSkeleton(AnimatedObject->GetSkeleton());
+	
+	//IAnimationDataController& UUMController = DestSeq->GetController();
+	//UUMController.InitializeModel();
+
+	
 	UUMAnimDataController& UUMController = dynamic_cast<UUMAnimDataController&>(DestSeq->GetUMController()); // LETS GOOO (Sets to custom DataController
 	UUMController.RemoveAllBoneTracks(false);
-	
 	double SequenceLength = 1.0;
 	for (auto Joint : JointTimelineMap)
 	{
@@ -74,23 +69,38 @@ UAnimSequence* UUMAnimationProducer::CreateSequence(TMap<FName, FUMJointTimeline
 	for (auto &Joint : JointTimelineMap)
 	{
 		FName &BoneName = Joint.Key;
-		FName TrackName =  BoneName; //FName(BoneName.ToString() + TEXT("_Curve"));
-		const FAnimationCurveIdentifier CurveId(TrackName, ERawCurveTrackTypes::RCT_Transform);
-		UUMController.AddCurve(CurveId, EAnimAssetCurveFlags::AACF_NONE, false);
+		TArray<FUMJointKey> &Timeline = Joint.Value.Timeline;
+		if(Timeline.Num() <= 0)
+		{
+			continue;
+		}
+		Timeline.Sort();
+		FName TrackName =  BoneName; 
 		UUMController.AddBoneCurve(TrackName, false);
-		UUMController.SetBoneTrackKeys(BoneName, Joint.Value.Timeline);
-		// UE_LOG(LogAnimProducer, Log, TEXT("Joint: %s, Len=%d"), *BoneName.ToString(), Joint.Value.Timeline.Num())
 		UUMController.NotifyPopulated();
+		FReferenceSkeleton RefSkeleton = AnimatedObject->GetSkeleton()->GetReferenceSkeleton();
+		const int Index = RefSkeleton.FindBoneIndex(BoneName);
+		const FTransform& RefTransform = RefSkeleton.GetRefBonePose()[Index];
+		FTransformCurve CurveTransforms = FTransformCurve();
+		for(auto [Time, Transform] : Joint.Value.Timeline) //structured binding
+		{
+			Transform.AddToTranslation(RefTransform.GetTranslation());
+			CurveTransforms.UpdateOrAddKey(Transform, Time);
+		}
+		TArray<FVector> TranslationOut;
+		TArray<FQuat> RotationOut;
+		TArray<FVector> ScaleOut;
 		UE_LOG(LogAnimProducer, Log, TEXT("Bone: %s"), *TrackName.ToString())
-		UUMController.SetTransformCurveKeys(CurveId, Joint.Value.Timeline);
-		const FTransformCurve &CurveTransforms = UUMController.Model->GetTransformCurve(CurveId);
 		for (int frame = 0; frame < NumberOfFrames.Value; frame++)
 		{
-			const FTransform &CurveTransform = CurveTransforms.Evaluate(frame/static_cast<double>(ResampleRate), 1.f);
-			UE_LOG(LogAnimProducer, Log, TEXT("Transform Frame #%02d: %s"), frame, *CurveTransform.ToString())
+			const FTransform &Transform = CurveTransforms.Evaluate(frame/static_cast<double>(ResampleRate), 1.f);
+			UE_LOG(LogAnimProducer, Log, TEXT("Transform Frame #%02d: %s"), frame, *Transform.ToString())
+			TranslationOut.Add(Transform.GetTranslation());
+			RotationOut.Add(Transform.GetRotation());
+			ScaleOut.Add(Transform.GetScale3D());
 		}
+		UUMController.SetBoneTrackKeys(BoneName, TranslationOut, RotationOut, ScaleOut, false);
 	}
-	
 	// Reregister skeletal mesh components so they reflect the updated animation
 	for (TObjectIterator<USkeletalMeshComponent> Iter; Iter; ++Iter)
 	{

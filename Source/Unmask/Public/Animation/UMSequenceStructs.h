@@ -25,6 +25,11 @@ struct FUMJointKey
 	GENERATED_BODY()
 
 public:
+
+	constexpr bool operator<(const FUMJointKey& Other) const
+	{
+		return Time < Other.Time;
+	}
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
 	float Time = 0.f;
 	
