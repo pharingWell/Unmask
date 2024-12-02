@@ -77,23 +77,11 @@ struct FUMJointGroup
 public:
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
 	FName Name;
-	//static TArray<FUMJointGroup*> AllGroups;
+	static TArray<FUMJointGroup*> AllGroups;
 public:
-	FUMJointGroup()
-	{
-// I'd love to add the AllGroups system with the Parent and Me indecies. However...
-		
-		// unresolved external symbol "public: static class TArray<struct FUMJointGroup *,
-		// class TSizedDefaultAllocator<32> > FUMJointGroup::AllGroups"
-		// (?AllGroups@FUMJointGroup@@2V?$TArray@PEAUFUMJointGroup@@V?$TSizedDefaultAllocator@$0CA@@@@@A)
-
-		
-		// if (AllGroups.Num() == 0)
-		// {
-		// 	AllGroups = TArray<FUMJointGroup*>();
-		// }
-		// Me = AllGroups.Num();
-		// AllGroups.Add(this);
+	FUMJointGroup() {
+		Me = AllGroups.Num();
+		AllGroups.Add(this);
 	}
 	TArray<FUMJointGroup>& GetGroups() { return Groups; }
 	TArray<FUMJoint>& GetJoints() { return Joints; }
@@ -111,7 +99,7 @@ public:
 			);
 		}
 		Groups.Add(Group);
-		//Groups.Last().Parent = Me;
+		Groups.Last().Parent = Me;
 	}
 	void AddJoints(const TArray<FUMJoint>& JointsIn) { for (auto& Joint : JointsIn) { AddJoint(Joint); } }
 	void AddJoint(const FUMJoint& Joint)
@@ -121,9 +109,8 @@ public:
 	}
 
 private:
-	// Index in AllGroups array
-	//int Parent = -1;
-	//int Me = -1;
+	int Parent = -1;
+	int Me = -1;
 	
 	TArray<FUMJointGroup> Groups;
 	TArray<FUMJoint> Joints;

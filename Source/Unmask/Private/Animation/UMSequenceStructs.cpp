@@ -18,3 +18,5 @@ const FUMJointGroup& UUMSequenceHelper::MakeJointGroup(FName Name, const TArray<
 	JointGroup->AddJoints(Joints);
 	return *JointGroup;
 }
+
+TArray<FUMJointGroup*> FUMJointGroup::AllGroups = TArray<FUMJointGroup*>();
