@@ -48,6 +48,8 @@ public:
 	FUMJointTimeline(const TArray<FUMJointKey>& JointTimelineIn) : Timeline(JointTimelineIn) {}
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
 	TArray<FUMJointKey> Timeline;
+	float StartTime = 0;
+	float Scale = 1;
 };
 
 
