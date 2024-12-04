@@ -12,6 +12,13 @@
 	],
 	"Plugins": [
 		{
+			"Name": "GitSourceControl",
+			"Enabled": true,
+			"TargetAllowList": [
+				"Editor"
+			]
+		},
+		{
 			"Name": "ModelingToolsEditorMode",
 			"Enabled": true,
 			"TargetAllowList": [
