@@ -6,6 +6,6 @@ public class EditorModule : ModuleRules
 {
 	public EditorModule(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "Engine", "UnrealEd", });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "Engine", "CoreUObject", "UnrealEd", });
 	}
 }
