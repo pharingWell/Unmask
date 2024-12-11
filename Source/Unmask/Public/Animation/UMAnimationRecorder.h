@@ -1,60 +1,51 @@
+
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UMSequenceStructs.h"
+#include "Animation/AnimData/UMSequenceStructs.h"
+#include "Components/PoseableMeshComponent.h"
 #include "UObject/Object.h"
 #include "UMAnimationRecorder.generated.h"
-/*
-USTRUCT(Blueprintable, BlueprintType)
-struct FRecorderData
+
+/**
+ * 
+ */
+USTRUCT()
+struct FParentChildPair
 {
 	GENERATED_BODY()
-	
-	TMap<FName, FUMJointTimeline> Joints;
-	USkeletalMeshComponent* Component;
-	int Frames, FrameRate;
-	int CurrentFrame = 0;
+	int32 ParentIndex, ChildIndex;
 };
 
-UCLASS()
+UCLASS(BlueprintType)
 class UNMASK_API UUMAnimationRecorder : public UObject
 {
 	GENERATED_BODY()
-
-	public:
-		UFUNCTION(BlueprintCallable, Category = "Animation|Recording")
-		static FRecorderData InitRecorderData(USkeletalMeshComponent* Component, int Frames, int Framerate);
-		UFUNCTION(BlueprintCallable, Category = "Animation|Recording")
-		static void RecordFrame(FRecorderData Data);
-		UFUNCTION(BlueprintCallable, Category = "Animation|Recording")
-		static UAnimSequence* ProducePlayback(FRecorderData Data);
-		UFUNCTION(BlueprintCallable, Category = "Animation|Recording")
-		static TMap<FName, FUMJointTimeline> GetJoints(FRecorderData Data) { return Data.Joints; }
-};
-*/
-
-UCLASS()
-class UNMASK_API UUMAnimationRecorder : public UObject
-{
-	GENERATED_BODY()
-
 protected:
-	UPROPERTY(Blueprintable, BlueprintReadOnly)
-	USkeletalMeshComponent* Component;
-	TMap<FName, FUMJointTimeline> Joints;
+	UPoseableMeshComponent* PoseableMesh;
+	FUMJointGroup RootGroup;
+	TMap<FName, FUMJointGroup> AllGroups;
 
 public:
-	UUMAnimationRecorder();
+	UUMAnimationRecorder() { this->PoseableMesh = nullptr; }
 	UFUNCTION(BlueprintCallable)
-	void InitAnimationRecorder(USkeletalMeshComponent* InitComponent);
+	static UUMAnimationRecorder* GetNewAnimationRecorder();
 	UFUNCTION(BlueprintCallable)
-	void RecordFrame(float Time);
-	//UFUNCTION(BlueprintCallable)
-	//UAnimSequence* ProducePlayback(float Length);
+	void InitAnimationRecorder(UPoseableMeshComponent* InSkeletalMesh);
+	UFUNCTION(BlueprintCallable)
+	void SetBoneTransform(FName Bone, FTransform Transform) const;
+	UFUNCTION(BlueprintCallable)
+	FName GetGroupWithBone(FName Bone);
+	UFUNCTION(BlueprintCallable)
+	void HideAllButGroup(FName GroupName);
+	UFUNCTION(BlueprintCallable)
+	void LoadTimelines(TMap<FName, FUMJointTimeline> Timelines);
 	UFUNCTION(BluePrintCallable)
-	TMap<FName, FUMJointTimeline> GetJointTimelines() { return this->Joints; }
+	FUMJointGroup GetRootGroup() { return this->RootGroup; }
 	UFUNCTION(BluePrintCallable)
-	FUMJointTimeline GetJointTimeline(FName Name) { return *(this->Joints.Find(Name)); }
+	TMap<FName, FUMJointGroup> GetGroups() { return this->AllGroups;}
+private:
+	bool IsInGroup(FName BoneName, FName GroupName);
 };

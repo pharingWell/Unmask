@@ -8,7 +8,7 @@
 #include "Animation/AnimData/AnimDataModel.h"
 #include "Animation/AnimData/IAnimationDataController.h"
 #include "Animation/AnimCurveTypes.h"
-#include "Animation/UMSequenceStructs.h"
+#include "Animation/AnimData/UMSequenceStructs.h"
 
 #include "UMAnimDataController.generated.h"
 

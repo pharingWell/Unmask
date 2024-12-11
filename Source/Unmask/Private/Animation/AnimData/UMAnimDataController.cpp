@@ -2,7 +2,7 @@
 #include "Animation/AnimData/UMAnimDataController.h"
 
 #include "Animation/AnimationSettings.h"
-#include "Animation/UMSequenceStructs.h"
+#include "Animation/AnimData/UMSequenceStructs.h"
 
 void UUMAnimDataController::OpenBracket(const FText& InTitle, bool bShouldTransact /*= true*/)
 {	

@@ -1,4 +1,4 @@
-#include "Animation/UMSequenceStructs.h"
+#include "Animation/AnimData/UMSequenceStructs.h"
 
 #include "Animation/UMAnimationProducer.h"
 
