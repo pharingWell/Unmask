@@ -37,6 +37,8 @@ public:
 	void SetBoneTransform(FName Bone, FTransform Transform) const;
 	UFUNCTION(BlueprintCallable)
 	void HideAllButGroup(FName GroupName);
+	UFUNCTION(BlueprintCallable)
+	void LoadTimelines(TMap<FName, FUMJointTimeline> Timelines);
 private:
 	bool IsInGroup(FName BoneName, FName GroupName);
 };

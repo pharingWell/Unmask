@@ -96,3 +96,24 @@ bool UUMMeshPoser::IsInGroup(FName BoneName, FName GroupName)
 
 	return false;
 }
+
+void UUMMeshPoser::LoadTimelines(TMap<FName, FUMJointTimeline> Timelines)
+{
+	for (TTuple<FName, FUMJointTimeline> Timeline : Timelines)
+	{
+		for (TTuple<FName, FUMJointGroup> Group : this->AllGroups)
+		{
+			bool Exit = false;
+			for (int i = 0; i < Group.Value.Joints.Num(); i++)
+			{
+				if (Group.Value.Joints[i].Name == Timeline.Key)
+				{
+					Exit = true;
+					this->AllGroups.Find(Group.Key)->Joints[i].Timeline = Timeline.Value;
+					break;
+				}
+			}
+			if (Exit) break;
+		}
+	}
+}
