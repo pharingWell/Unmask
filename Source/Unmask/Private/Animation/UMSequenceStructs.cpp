@@ -1,5 +1,7 @@
 #include "Animation/UMSequenceStructs.h"
 
+#include "Animation/UMAnimationProducer.h"
+
 FUMJointKey UUMSequenceHelper::MakeKeyframe(float Time, const FTransform &Transform)
 {
 	return {Time, Transform};
@@ -20,3 +22,33 @@ const FUMJointGroup& UUMSequenceHelper::MakeJointGroup(FName Name, const TArray<
 }
 
 TArray<FUMJointGroup*> FUMJointGroup::AllGroups = TArray<FUMJointGroup*>();
+
+UAnimSequence* UUMSequenceHelper::BuildSequence(FUMJointGroup JointGroup, USkeletalMesh* SkeletalMesh)
+{
+	TMap<FName, FUMJointTimeline> Timelines;
+	TQueue<FUMJointGroup> Queue;
+	Queue.Enqueue(JointGroup);
+	while (!Queue.IsEmpty())
+	{
+		FUMJointGroup Group;
+		Queue.Dequeue(Group);
+		for (FUMJointGroup G : Group.GetGroups())
+		{
+			Queue.Enqueue(G);
+		}
+		for (FUMJoint J : Group.GetJoints())
+		{
+			float Scale = J.Timeline.Duration / J.Timeline.Timeline[J.Timeline.Timeline.Num() - 1].Time;
+			FUMJointTimeline NewTimeline;
+			for (FUMJointKey Key : J.Timeline.Timeline)
+			{
+				FUMJointKey NewKey;
+				NewKey.Time = (Key.Time * Scale) + J.Timeline.StartTime;
+				NewKey.Transform = Key.Transform;
+				NewTimeline.Timeline.Add(NewKey);
+			}
+			Timelines.Add(J.Name, NewTimeline);
+		}
+	}
+	return UUMAnimationProducer::CreateSequence(Timelines, SkeletalMesh);
+}

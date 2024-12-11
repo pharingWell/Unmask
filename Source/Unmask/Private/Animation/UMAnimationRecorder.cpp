@@ -59,8 +59,9 @@ void UUMAnimationRecorder::RecordFrame(float Time)
 		this->Joints.Find(Component->GetBoneName(i))->Timeline.Add(FUMJointKey(Time, Transforms[i]));
 	}
 }	
-
+/*
 UAnimSequence* UUMAnimationRecorder::ProducePlayback(float Length)
 {
 	return UUMAnimationProducer::CreateSequence(this->Joints, this->Component->GetSkeletalMeshAsset());
 }
+*/

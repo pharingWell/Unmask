@@ -45,11 +45,16 @@ struct FUMJointTimeline
 	GENERATED_BODY()
 public:
 	FUMJointTimeline() {}
-	FUMJointTimeline(const TArray<FUMJointKey>& JointTimelineIn) : Timeline(JointTimelineIn) {}
+	FUMJointTimeline(const TArray<FUMJointKey>& JointTimelineIn) : Timeline(JointTimelineIn)
+	{
+		this->Duration = Timeline[Timeline.Num() - 1].Time;
+	}
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
 	TArray<FUMJointKey> Timeline;
+	UPROPERTY(BlueprintReadWrite)
 	float StartTime = 0;
-	float Scale = 1;
+	UPROPERTY(BlueprintReadWrite)
+	float Duration = 0;
 };
 
 
@@ -164,4 +169,6 @@ class UUMSequenceHelper :  public UBlueprintFunctionLibrary
 		JointGroup.AllTimelines.Add(Joint.Name, Joint.Timeline);
 		JointGroup.Joints.Add(Joint);
 	}
+	UFUNCTION(BlueprintPure, Category = "Animation", meta=(BlueprintThreadSafe))
+	static UAnimSequence* BuildSequence(FUMJointGroup JointGroup, USkeletalMesh* SkeletalMesh);
 };

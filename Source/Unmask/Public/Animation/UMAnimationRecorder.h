@@ -51,6 +51,10 @@ public:
 	void InitAnimationRecorder(USkeletalMeshComponent* InitComponent);
 	UFUNCTION(BlueprintCallable)
 	void RecordFrame(float Time);
-	UFUNCTION(BlueprintCallable)
-	UAnimSequence* ProducePlayback(float Length);
+	//UFUNCTION(BlueprintCallable)
+	//UAnimSequence* ProducePlayback(float Length);
+	UFUNCTION(BluePrintCallable)
+	TMap<FName, FUMJointTimeline> GetJointTimelines() { return this->Joints; }
+	UFUNCTION(BluePrintCallable)
+	FUMJointTimeline GetJointTimeline(FName Name) { return *(this->Joints.Find(Name)); }
 };
