@@ -82,45 +82,24 @@ struct FUMJointGroup
 public:
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
 	FName Name;
-	static TArray<FUMJointGroup*> AllGroups;
+	TArray<FUMJointGroup*> Groups;
+	TArray<FUMJoint> Joints;
 public:
-	FUMJointGroup() {
-		Me = AllGroups.Num();
-		AllGroups.Add(this);
-	}
-	TArray<FUMJointGroup>& GetGroups() { return Groups; }
-	TArray<FUMJoint>& GetJoints() { return Joints; }
-	TMap<FName, FUMJointTimeline>& GetAllTimelines() { return AllTimelines; }
-
-	void AddGroups(const TArray<FUMJointGroup>& GroupsIn) { for (auto& Group : GroupsIn) { AddGroup(Group); }}
-	void AddGroup(const FUMJointGroup& Group)
+	FUMJointGroup() {}
+	
+	void AddGroups(TArray<FUMJointGroup*>& GroupsIn) { for (auto& Group : GroupsIn) { AddGroup(Group); }}
+	void AddGroup(FUMJointGroup* Group)
 	{
-		// No reserve tricks because they screw up amortized constant time
-		for (const auto& [OldName, Timeline] : Group.AllTimelines)
-		{
-			AllTimelines.Add(
-				FName(Group.Name.ToString() + TEXT(".") + OldName.ToString()), //LowerArm.Hand.Pointer
-				Timeline
-			);
-		}
 		Groups.Add(Group);
-		Groups.Last().Parent = Me;
 	}
-	void AddJoints(const TArray<FUMJoint>& JointsIn) { for (auto& Joint : JointsIn) { AddJoint(Joint); } }
-	void AddJoint(const FUMJoint& Joint)
+	void AddJoints(TArray<FUMJoint>& JointsIn) { for (auto& Joint : JointsIn) { AddJoint(Joint); } }
+	void AddJoint(FUMJoint Joint)
 	{
-		AllTimelines.Add(Joint.Name, Joint.Timeline);
 		Joints.Add(Joint);
 	}
 
 private:
-	int Parent = -1;
-	int Me = -1;
 	
-	TArray<FUMJointGroup> Groups;
-	TArray<FUMJoint> Joints;
-	TMap<FName, FUMJointTimeline> AllTimelines;
-
 	friend UUMSequenceHelper;
 };
 
@@ -136,8 +115,8 @@ class UUMSequenceHelper :  public UBlueprintFunctionLibrary
 	static FUMJoint MakeJoint(FName NameIn, const FRotatorRange& RangeLimitsIn, const FUMJointTimeline& SequenceIn);
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Sequencer", meta=(BlueprintThreadSafe))
-	static const FUMJointGroup& MakeJointGroup(FName Name, const TArray<FUMJointGroup>& Groups,
-	                                           const TArray<FUMJoint>& Joints);
+	static const FUMJointGroup& MakeJointGroup(FName Name, TArray<FUMJointGroup>& Groups,
+	                                           TArray<FUMJoint>& Joints);
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
 	static void AddGroups(FUMJointGroup& JointGroup, const TArray<FUMJointGroup>& GroupsIn)
@@ -145,28 +124,20 @@ class UUMSequenceHelper :  public UBlueprintFunctionLibrary
 		for (auto& Group : GroupsIn) { AddGroup(JointGroup, Group); }
 	}
 	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
-	static void AddGroup(FUMJointGroup& JointGroup, const FUMJointGroup& Group)
+	static void AddGroup(FUMJointGroup& JointGroup, FUMJointGroup Group)
 	{
 		// No reserve tricks because they screw up amortized constant time
-		for (const auto& [OldName, Timeline] : Group.AllTimelines)
-		{
-			JointGroup.AllTimelines.Add(
-				FName(Group.Name.ToString() + TEXT(".") + OldName.ToString()), 
-				Timeline
-			);
-		}
-		JointGroup.Groups.Add(Group);
+		JointGroup.Groups.Add(&Group);
 		//Groups.Last().Parent = Me;
 	}
 	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
-	static void AddJoints(FUMJointGroup& JointGroup, const TArray<FUMJoint>& JointsIn)
+	static void AddJoints(FUMJointGroup& JointGroup, TArray<FUMJoint>& JointsIn)
 	{
 		for (auto& Joint : JointsIn) { AddJoint(JointGroup, Joint); }
 	}
 	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
-	static void AddJoint(FUMJointGroup& JointGroup, const FUMJoint& Joint)
+	static void AddJoint(FUMJointGroup& JointGroup, FUMJoint& Joint)
 	{
-		JointGroup.AllTimelines.Add(Joint.Name, Joint.Timeline);
 		JointGroup.Joints.Add(Joint);
 	}
 	UFUNCTION(BlueprintPure, Category = "Animation", meta=(BlueprintThreadSafe))

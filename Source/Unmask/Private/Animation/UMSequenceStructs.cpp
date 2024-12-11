@@ -11,17 +11,15 @@ FUMJoint UUMSequenceHelper::MakeJoint(FName NameIn, const FRotatorRange& RangeLi
                                      const FUMJointTimeline& SequenceIn)
 { return {NameIn, RangeLimitsIn, SequenceIn}; }
 
-const FUMJointGroup& UUMSequenceHelper::MakeJointGroup(FName Name, const TArray<FUMJointGroup>& Groups,
-                                                      const TArray<FUMJoint>& Joints)
+const FUMJointGroup& UUMSequenceHelper::MakeJointGroup(FName Name, TArray<FUMJointGroup>& Groups,
+                                                      TArray<FUMJoint>& Joints)
 {
 	FUMJointGroup* JointGroup = new FUMJointGroup();
 	JointGroup->Name = Name;
-	JointGroup->AddGroups(Groups);
+	for (FUMJointGroup G : Groups) JointGroup->AddGroup(&G);
 	JointGroup->AddJoints(Joints);
 	return *JointGroup;
 }
-
-TArray<FUMJointGroup*> FUMJointGroup::AllGroups = TArray<FUMJointGroup*>();
 
 UAnimSequence* UUMSequenceHelper::BuildSequence(FUMJointGroup JointGroup, USkeletalMesh* SkeletalMesh)
 {
@@ -32,11 +30,11 @@ UAnimSequence* UUMSequenceHelper::BuildSequence(FUMJointGroup JointGroup, USkele
 	{
 		FUMJointGroup Group;
 		Queue.Dequeue(Group);
-		for (FUMJointGroup G : Group.GetGroups())
+		for (FUMJointGroup* G : Group.Groups)
 		{
-			Queue.Enqueue(G);
+			Queue.Enqueue(*G);
 		}
-		for (FUMJoint J : Group.GetJoints())
+		for (FUMJoint J : Group.Joints)
 		{
 			float Scale = J.Timeline.Duration / J.Timeline.Timeline[J.Timeline.Timeline.Num() - 1].Time;
 			FUMJointTimeline NewTimeline;
