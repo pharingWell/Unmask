@@ -8,45 +8,61 @@ UUMMeshPoser* UUMMeshPoser::GetNewMeshPoser()
 	return NewObject<UUMMeshPoser>();
 }
 
-
 void UUMMeshPoser::InitMeshPoser(UPoseableMeshComponent* InSkeletalMesh)
 {
 	this->PoseableMesh = InSkeletalMesh;
-	TQueue<FParentChildPair> BoneQueue;
-	
-	this->JointGroup.AddJoint(FUMJoint(this->PoseableMesh->GetBoneName(0)));
-	this->AllGroups.Add(this->JointGroup);
-	
-	for (int32 B : this->GetChildBones(0))
-	{
-		BoneQueue.Enqueue(FParentChildPair(0, B));
-	}
-	
-	while (!BoneQueue.IsEmpty())
-	{
-		FParentChildPair BonePair;
-		BoneQueue.Dequeue(BonePair);
-		FUMJointGroup JG;
-		JG.Name = this->PoseableMesh->GetBoneName(BonePair.ChildIndex);
-		this->AllGroups[BonePair.ChildIndex] = JG;
-		this->AllGroups[BonePair.ParentIndex].AddJoint(FUMJoint(this->PoseableMesh->GetBoneName(BonePair.ChildIndex)));
-		if (this->GetChildBones(BonePair.ChildIndex).Num() != 0) this->AllGroups[BonePair.ParentIndex].AddGroup(this->AllGroups[BonePair.ChildIndex]);
-		for (int32 B : this->GetChildBones(BonePair.ChildIndex)) BoneQueue.Enqueue(FParentChildPair(BonePair.ChildIndex, B));
-	}
 
-}
+	this->RootGroup.Name = FName("body");
+	this->AllGroups.Add(this->RootGroup.Name, this->RootGroup);
+	FUMJoint Neck, Head, LeftShoulder, RightShoulder;
+	Neck.Name = FName("neck_01");
+	Head.Name = FName("head");
+	LeftShoulder.Name = FName("upperarm_l");
+	RightShoulder.Name = FName("upperarm_r");
+	this->AllGroups.Find(this->RootGroup.Name)->AddJoint(Neck);
+	this->AllGroups.Find(this->RootGroup.Name)->AddJoint(Head);
+	this->AllGroups.Find(this->RootGroup.Name)->AddJoint(LeftShoulder);
+	this->AllGroups.Find(this->RootGroup.Name)->AddJoint(RightShoulder);
 
-TArray<int32> UUMMeshPoser::GetChildBones(int32 ParentBone) const
-{
-	TArray<int32> ChildBones;
-	for (int i = 0; i < this->PoseableMesh->GetNumBones(); i++)
-	{
-		if (this->PoseableMesh->GetBoneIndex(this->PoseableMesh->GetParentBone(this->PoseableMesh->GetBoneName(i))) == ParentBone)
-		{
-			ChildBones.Add(i);
-		}
-	}
-	return ChildBones;
+	FUMJointGroup LeftArm;
+	LeftArm.Name = FName("left arm");
+	this->AllGroups.Add(LeftArm.Name, LeftArm);
+	FUMJoint LowerLeftArm, LeftHand;
+	LowerLeftArm.Name = FName("lowerarm_l");
+	LeftHand.Name = FName("hand_l");
+	this->AllGroups.Find(LeftArm.Name)->AddJoint(LowerLeftArm);
+	this->AllGroups.Find(LeftArm.Name)->AddJoint(LeftHand);
+	this->AllGroups.Find(this->RootGroup.Name)->AddGroup(this->AllGroups.Find(LeftArm.Name));
+
+	FUMJointGroup RightArm;
+	RightArm.Name = FName("right arm");
+	this->AllGroups.Add(RightArm.Name, RightArm);
+	FUMJoint LowerRightArm, RightHand;
+	LowerRightArm.Name = FName("lowerarm_r");
+	RightHand.Name = FName("hand_r");
+	this->AllGroups.Find(RightArm.Name)->AddJoint(LowerRightArm);
+	this->AllGroups.Find(RightArm.Name)->AddJoint(RightHand);
+	this->AllGroups.Find(this->RootGroup.Name)->AddGroup(this->AllGroups.Find(RightArm.Name));
+
+	FUMJointGroup LeftLeg;
+	LeftLeg.Name = FName("left leg");
+	this->AllGroups.Add(LeftLeg.Name, LeftLeg);
+	FUMJoint LeftThigh, LeftCalf;
+	LeftThigh.Name = FName("thigh_l");
+	LeftCalf.Name = FName("calf_l");
+	this->AllGroups.Find(LeftLeg.Name)->AddJoint(LeftThigh);
+	this->AllGroups.Find(LeftLeg.Name)->AddJoint(LeftCalf);
+	this->AllGroups.Find(this->RootGroup.Name)->AddGroup(this->AllGroups.Find(LeftLeg.Name));
+
+	FUMJointGroup RightLeg;
+	RightLeg.Name = FName("right leg");
+	this->AllGroups.Add(RightLeg.Name, RightLeg);
+	FUMJoint RightThigh, RightCalf;
+	RightThigh.Name = FName("thigh_r");
+	RightCalf.Name = FName("calf_r");
+	this->AllGroups.Find(RightLeg.Name)->AddJoint(RightThigh);
+	this->AllGroups.Find(RightLeg.Name)->AddJoint(RightCalf);
+	this->AllGroups.Find(this->RootGroup.Name)->AddGroup(this->AllGroups.Find(RightLeg.Name));
 }
 
 void UUMMeshPoser::SetBoneTransform(FName Bone, FTransform Transform) const
@@ -54,3 +70,29 @@ void UUMMeshPoser::SetBoneTransform(FName Bone, FTransform Transform) const
 	this->PoseableMesh->SetBoneTransformByName(Bone, Transform, EBoneSpaces::Type::ComponentSpace);
 }
 
+void UUMMeshPoser::HideAllButGroup(FName GroupName)
+{
+	for (int i = 0; i < this->PoseableMesh->GetBoneSpaceTransforms().Num(); i++)
+	{
+		this->PoseableMesh->UnHideBone(i);
+		if (!this->IsInGroup(this->PoseableMesh->GetBoneName(i), GroupName))
+		{
+			this->PoseableMesh->HideBone(i, PBO_None);
+		}
+	}
+}
+
+bool UUMMeshPoser::IsInGroup(FName BoneName, FName GroupName)
+{
+	for (FUMJoint J : this->AllGroups.Find(GroupName)->Joints)
+	{
+		if (J.Name == BoneName) return true;
+	}
+	
+	for (FUMJointGroup* JG : this->AllGroups.Find(GroupName)->Groups)
+	{
+		if (this->IsInGroup(BoneName, JG->Name)) return true;
+	}
+
+	return false;
+}

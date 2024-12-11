@@ -24,8 +24,8 @@ class UNMASK_API UUMMeshPoser : public UObject
 	GENERATED_BODY()
 protected:
 	UPoseableMeshComponent* PoseableMesh;
-	FUMJointGroup JointGroup;
-	TArray<FUMJointGroup> AllGroups;
+	FUMJointGroup RootGroup;
+	TMap<FName, FUMJointGroup> AllGroups;
 
 public:
 	UUMMeshPoser() { this->PoseableMesh = nullptr; }
@@ -34,7 +34,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void InitMeshPoser(UPoseableMeshComponent* InSkeletalMesh);
 	UFUNCTION(BlueprintCallable)
-	TArray<int32> GetChildBones(int32 ParentBone) const;
-	UFUNCTION(BlueprintCallable)
 	void SetBoneTransform(FName Bone, FTransform Transform) const;
+	UFUNCTION(BlueprintCallable)
+	void HideAllButGroup(FName GroupName);
+private:
+	bool IsInGroup(FName BoneName, FName GroupName);
 };

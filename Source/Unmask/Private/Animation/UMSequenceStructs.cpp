@@ -32,11 +32,11 @@ UAnimSequence* UUMSequenceHelper::BuildSequence(FUMJointGroup JointGroup, USkele
 	{
 		FUMJointGroup Group;
 		Queue.Dequeue(Group);
-		for (FUMJointGroup G : Group.GetGroups())
+		for (FUMJointGroup G : Group.Groups)
 		{
 			Queue.Enqueue(G);
 		}
-		for (FUMJoint J : Group.GetJoints())
+		for (FUMJoint J : Group.Joints)
 		{
 			float Scale = J.Timeline.Duration / J.Timeline.Timeline[J.Timeline.Timeline.Num() - 1].Time;
 			FUMJointTimeline NewTimeline;
