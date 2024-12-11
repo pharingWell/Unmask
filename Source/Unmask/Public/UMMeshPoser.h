@@ -39,6 +39,10 @@ public:
 	void HideAllButGroup(FName GroupName);
 	UFUNCTION(BlueprintCallable)
 	void LoadTimelines(TMap<FName, FUMJointTimeline> Timelines);
+	UFUNCTION(BluePrintCallable)
+	FUMJointGroup GetRootGroup() { return this->RootGroup; }
+	UFUNCTION(BluePrintCallable)
+	TMap<FName, FUMJointGroup> GetGroups() { return this->AllGroups;}
 private:
 	bool IsInGroup(FName BoneName, FName GroupName);
 };
