@@ -85,7 +85,7 @@ public:
 	TArray<FUMJointGroup*> Groups;
 	TArray<FUMJoint> Joints;
 public:
-	FUMJointGroup();
+	FUMJointGroup() {}
 	
 	void AddGroups(TArray<FUMJointGroup*>& GroupsIn) { for (auto& Group : GroupsIn) { AddGroup(Group); }}
 	void AddGroup(FUMJointGroup* Group)
@@ -115,8 +115,8 @@ class UUMSequenceHelper :  public UBlueprintFunctionLibrary
 	static FUMJoint MakeJoint(FName NameIn, const FRotatorRange& RangeLimitsIn, const FUMJointTimeline& SequenceIn);
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Sequencer", meta=(BlueprintThreadSafe))
-	static const FUMJointGroup& MakeJointGroup(FName Name, const TArray<FUMJointGroup>& Groups,
-	                                           const TArray<FUMJoint>& Joints);
+	static const FUMJointGroup& MakeJointGroup(FName Name, TArray<FUMJointGroup>& Groups,
+	                                           TArray<FUMJoint>& Joints);
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
 	static void AddGroups(FUMJointGroup& JointGroup, const TArray<FUMJointGroup>& GroupsIn)
