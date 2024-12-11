@@ -36,6 +36,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetBoneTransform(FName Bone, FTransform Transform) const;
 	UFUNCTION(BlueprintCallable)
+	FName GetGroupWithBone(FName Bone);
+	UFUNCTION(BlueprintCallable)
 	void HideAllButGroup(FName GroupName);
 	UFUNCTION(BlueprintCallable)
 	void LoadTimelines(TMap<FName, FUMJointTimeline> Timelines);

@@ -46,28 +46,55 @@ void UUMMeshPoser::InitMeshPoser(UPoseableMeshComponent* InSkeletalMesh)
 
 	FUMJointGroup LeftLeg;
 	LeftLeg.Name = FName("left leg");
-	this->AllGroups.Add(LeftLeg.Name, LeftLeg);
+	auto &LeftLegRef =this->AllGroups.Add(LeftLeg.Name, LeftLeg);
 	FUMJoint LeftThigh, LeftCalf;
 	LeftThigh.Name = FName("thigh_l");
 	LeftCalf.Name = FName("calf_l");
-	this->AllGroups.Find(LeftLeg.Name)->AddJoint(LeftThigh);
-	this->AllGroups.Find(LeftLeg.Name)->AddJoint(LeftCalf);
-	this->AllGroups.Find(this->RootGroup.Name)->AddGroup(this->AllGroups.Find(LeftLeg.Name));
+	LeftLegRef.AddJoint(LeftThigh);
+	LeftLegRef.AddJoint(LeftCalf);
+	this->AllGroups.Find(this->RootGroup.Name)->AddGroup(&LeftLegRef);
 
 	FUMJointGroup RightLeg;
 	RightLeg.Name = FName("right leg");
-	this->AllGroups.Add(RightLeg.Name, RightLeg);
+	auto &RightLegRef = this->AllGroups.Add(RightLeg.Name, RightLeg);
 	FUMJoint RightThigh, RightCalf;
 	RightThigh.Name = FName("thigh_r");
 	RightCalf.Name = FName("calf_r");
-	this->AllGroups.Find(RightLeg.Name)->AddJoint(RightThigh);
-	this->AllGroups.Find(RightLeg.Name)->AddJoint(RightCalf);
-	this->AllGroups.Find(this->RootGroup.Name)->AddGroup(this->AllGroups.Find(RightLeg.Name));
+	RightLegRef.AddJoint(RightThigh);
+	RightLegRef.AddJoint(RightCalf);
+	this->AllGroups.Find(this->RootGroup.Name)->AddGroup(&RightLegRef);
 }
 
 void UUMMeshPoser::SetBoneTransform(FName Bone, FTransform Transform) const
 {
 	this->PoseableMesh->SetBoneTransformByName(Bone, Transform, EBoneSpaces::Type::ComponentSpace);
+}
+
+FName UUMMeshPoser::GetGroupWithBone(FName BoneName)
+{
+	FReferenceSkeleton RefSkeleton = PoseableMesh->GetSkinnedAsset()->GetRefSkeleton();
+	const int32 TargetIndex = RefSkeleton.FindBoneIndex(BoneName);
+	int32 LowestDepth = 500;
+	FName BestGroup = "body";
+	for (auto Tuple : AllGroups)
+	{
+		FUMJointGroup &Group = Tuple.Value;
+		for (auto Joint : Group.Joints)
+		{
+			const int32 BoneIndex = RefSkeleton.FindBoneIndex(Joint.Name);
+			int32 Depth = RefSkeleton.GetDepthBetweenBones(TargetIndex, BoneIndex);
+			if (Depth != -1 && Depth < LowestDepth)
+			{
+				LowestDepth = Depth;
+				BestGroup = Group.Name;
+				if (Depth == 0)
+				{
+					break;
+				}
+			}
+		}
+	}
+	return BestGroup;
 }
 
 void UUMMeshPoser::HideAllButGroup(FName GroupName)
