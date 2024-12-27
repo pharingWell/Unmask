@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UMSequenceStructs.h"
+#include "AnimData/UMSequenceStructs.h"
 #include "UObject/Object.h"
 #include "UMAnimationProducer.generated.h"
 

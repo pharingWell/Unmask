@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "Animation/UMSequenceStructs.h"
+#include "Animation/AnimData/UMSequenceStructs.h"
 #include "Animation/UMAnimationProducer.h"
 #include "UMCueTree.generated.h"
 
