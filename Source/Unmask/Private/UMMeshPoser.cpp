@@ -104,6 +104,7 @@ void UUMMeshPoser::HideAllButGroup(FName GroupName)
 		this->PoseableMesh->UnHideBone(i);
 		if (!this->IsInGroup(this->PoseableMesh->GetBoneName(i), GroupName))
 		{
+			//UE_LOG(LogScript, Error, TEXT("%s"), *this->PoseableMesh->GetBoneName(i).ToString())
 			this->PoseableMesh->HideBone(i, PBO_None);
 		}
 	}
@@ -113,7 +114,10 @@ bool UUMMeshPoser::IsInGroup(FName BoneName, FName GroupName)
 {
 	for (FUMJoint J : this->AllGroups.Find(GroupName)->Joints)
 	{
-		if (J.Name == BoneName) return true;
+		if (J.Name.IsEqual(BoneName))
+		{
+			return true;
+		}
 	}
 	
 	for (FUMJointGroup* JG : this->AllGroups.Find(GroupName)->Groups)
