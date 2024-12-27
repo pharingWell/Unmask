@@ -6,7 +6,7 @@
 #include "UMSequenceStructs.h"
 #include "UObject/Object.h"
 #include "UMAnimationRecorder.generated.h"
-
+/*
 USTRUCT(Blueprintable, BlueprintType)
 struct FRecorderData
 {
@@ -17,9 +17,7 @@ struct FRecorderData
 	int Frames, FrameRate;
 	int CurrentFrame = 0;
 };
-/**
- * 
- */
+
 UCLASS()
 class UNMASK_API UUMAnimationRecorder : public UObject
 {
@@ -34,4 +32,25 @@ class UNMASK_API UUMAnimationRecorder : public UObject
 		static UAnimSequence* ProducePlayback(FRecorderData Data);
 		UFUNCTION(BlueprintCallable, Category = "Animation|Recording")
 		static TMap<FName, FUMJointTimeline> GetJoints(FRecorderData Data) { return Data.Joints; }
+};
+*/
+
+UCLASS()
+class UNMASK_API UUMAnimationRecorder : public UObject
+{
+	GENERATED_BODY()
+
+protected:
+	UPROPERTY(Blueprintable, BlueprintReadOnly)
+	USkeletalMeshComponent* Component;
+	TMap<FName, FUMJointTimeline> Joints;
+
+public:
+	UUMAnimationRecorder();
+	UFUNCTION(BlueprintCallable)
+	void InitAnimationRecorder(USkeletalMeshComponent* InitComponent);
+	UFUNCTION(BlueprintCallable)
+	void RecordFrame(float Time);
+	UFUNCTION(BlueprintCallable)
+	UAnimSequence* ProducePlayback(float Length);
 };
