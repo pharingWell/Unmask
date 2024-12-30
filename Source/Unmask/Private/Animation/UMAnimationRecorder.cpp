@@ -135,12 +135,29 @@ FName UUMAnimationRecorder::GetGroupWithBone(FName BoneName)
 
 void UUMAnimationRecorder::HideAllButGroup(FName GroupName)
 {
-	for (int i = 0; i < this->PoseableMesh->GetBoneSpaceTransforms().Num(); i++)
+	for (int BoneIndex = 0; BoneIndex < this->PoseableMesh->GetBoneSpaceTransforms().Num(); BoneIndex++)
 	{
-		this->PoseableMesh->UnHideBone(i);
-		if (!this->IsInGroup(this->PoseableMesh->GetBoneName(i), GroupName))
+		this->PoseableMesh->UnHideBone(BoneIndex);
+		if (!this->IsInGroup(this->PoseableMesh->GetBoneName(BoneIndex), GroupName))
 		{
-			this->PoseableMesh->HideBone(i, PBO_None);
+			this->PoseableMesh->HideBone(BoneIndex, PBO_None);
+			TArray<uint8>& EditableBoneVisibilityStates = PoseableMesh->GetEditableBoneVisibilityStates();
+			if (BoneIndex < EditableBoneVisibilityStates.Num())
+			{
+				checkSlow ( BoneIndex != INDEX_NONE );
+				EditableBoneVisibilityStates[ BoneIndex ] = BVS_ExplicitlyHidden;
+				TArray<int32> Children;
+				PoseableMesh->GetSkinnedAsset()->GetSkeleton()->GetChildBones(BoneIndex, Children);
+				for (int32 Child : Children)
+				{
+					if (Child < EditableBoneVisibilityStates.Num())
+					{
+						checkSlow ( Child != INDEX_NONE );
+						EditableBoneVisibilityStates[Child] = BVS_Visible;
+					}
+				}
+				PoseableMesh->RebuildVisibilityArray();
+			}
 		}
 	}
 }
