@@ -24,18 +24,16 @@ class UNMASK_API UUMAnimationRecorder : public UObject
 {
 	GENERATED_BODY()
 protected:
-	UPoseableMeshComponent* PoseableMesh;
+	USkeletalMeshComponent* SkeletalMeshComponent;
 	FUMJointGroup RootGroup;
 	TMap<FName, FUMJointGroup> AllGroups;
 
 public:
-	UUMAnimationRecorder() { this->PoseableMesh = nullptr; }
+	UUMAnimationRecorder() { this->SkeletalMeshComponent = nullptr; }
 	UFUNCTION(BlueprintCallable)
 	static UUMAnimationRecorder* GetNewAnimationRecorder();
 	UFUNCTION(BlueprintCallable)
-	void InitAnimationRecorder(UPoseableMeshComponent* InSkeletalMesh);
-	UFUNCTION(BlueprintCallable)
-	void SetBoneTransform(FName Bone, FTransform Transform) const;
+	void InitAnimationRecorder(USkeletalMeshComponent* InSkeletalMeshComponent);
 	UFUNCTION(BlueprintCallable)
 	FName GetGroupWithBone(FName Bone);
 	UFUNCTION(BlueprintCallable)
