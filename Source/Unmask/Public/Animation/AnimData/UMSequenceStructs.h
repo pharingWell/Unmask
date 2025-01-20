@@ -57,6 +57,16 @@ public:
 	float Duration = 0;
 };
 
+// Represents a single state of a "ctrl" in the control rig for the given joint
+USTRUCT(Blueprintable, BlueprintType)
+struct FUMJointControl
+{
+	GENERATED_BODY()
+	UPROPERTY(Blueprintable, BlueprintReadWrite)
+	FName CtrlName;
+	UPROPERTY(Blueprintable, BlueprintReadWrite)
+	FTransform CtrlTransform;
+};
 
 // Represents a bone within the pose-able skeleton
 // Holds its own timeline of keys, its own name, and the limit that joint can be rotated within
