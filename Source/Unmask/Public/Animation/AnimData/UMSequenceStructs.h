@@ -38,6 +38,7 @@ public:
 
 };
 
+
 // To let the JointKey array be serialized
 USTRUCT(Blueprintable, BlueprintType)
 struct FUMJointTimeline
@@ -65,7 +66,7 @@ struct FUMJointControl
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
 	FName CtrlName;
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
-	FTransform CtrlTransform;
+	FRotator CtrlRotator;
 };
 
 // Represents a bone within the pose-able skeleton
