@@ -29,7 +29,7 @@ protected:
 	TMap<FName, FUMJointGroup> AllGroups;
 
 public:
-	UUMAnimationRecorder() { this->SkeletalMeshComponent = nullptr; }
+	UUMAnimationRecorder(): RootGroup("Root") { this->SkeletalMeshComponent = nullptr; }
 	UFUNCTION(BlueprintCallable)
 	static UUMAnimationRecorder* GetNewAnimationRecorder();
 	UFUNCTION(BlueprintCallable)
@@ -38,6 +38,9 @@ public:
 	FName GetGroupWithBone(FName Bone);
 	UFUNCTION(BlueprintCallable)
 	void HideAllButGroup(FName GroupName);
+	FString AllGroupsToString();
+	UFUNCTION(BlueprintCallable)
+	void PrintAllGroups();
 	UFUNCTION(BlueprintCallable)
 	void LoadTimelines(TMap<FName, FUMJointTimeline> Timelines);
 	UFUNCTION(BluePrintCallable)
@@ -45,5 +48,5 @@ public:
 	UFUNCTION(BluePrintCallable)
 	TMap<FName, FUMJointGroup> GetGroups() { return this->AllGroups;}
 private:
-	bool IsInGroup(FName BoneName, FName GroupName);
+	bool IsInGroup(FName BoneName, FName GroupName, bool bIncludeChildren);
 };

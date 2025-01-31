@@ -56,6 +56,8 @@ public:
 	float StartTime = 0;
 	UPROPERTY(BlueprintReadWrite)
 	float Duration = 0;
+public:
+	FString ToString();
 };
 
 // Represents a single state of a "ctrl" in the control rig for the given joint
@@ -66,7 +68,7 @@ struct FUMJointControl
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
 	FName CtrlName;
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
-	FRotator CtrlRotator;
+	FRotator CtrlRotator{FRotator(0, 0, 0)};
 };
 
 // Represents a bone within the pose-able skeleton
@@ -75,11 +77,22 @@ USTRUCT(Blueprintable, BlueprintType)
 struct FUMJoint
 {
 	GENERATED_BODY()
+	FUMJoint() : Name("*") {};
+	FUMJoint(FName InName) : Name(InName) {};
+	FUMJoint(FName InName, FName InCtrl, FRotatorRange InRangeLimits, FUMJointTimeline InTimeline) :
+		Name(InName), CtrlName(InCtrl), RangeLimits(InRangeLimits), Timeline(InTimeline)
+	{};
+public:
+	UPROPERTY(Blueprintable, BlueprintReadWrite)
 	FName Name;
+	UPROPERTY(Blueprintable, BlueprintReadWrite)
+	FName CtrlName;
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
 	FRotatorRange RangeLimits {FRotatorRange()};
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
 	FUMJointTimeline Timeline; // Collections of keyframes that have been set for the joint
+public:
+	FString ToString();
 };
 
 // A container for multiple Joints, which can also hold other JointGroups
@@ -96,18 +109,20 @@ public:
 	TArray<FUMJointGroup*> Groups;
 	TArray<FUMJoint> Joints;
 public:
-	FUMJointGroup() {}
-	
-	void AddGroups(TArray<FUMJointGroup*>& GroupsIn) { for (auto& Group : GroupsIn) { AddGroup(Group); }}
+	FUMJointGroup() : Name("*") {}
+	FUMJointGroup(FName InName) : Name(InName) {}
+	void AddGroups(TArray<FUMJointGroup*>& GroupsIn) { for (const auto& Group : GroupsIn) { AddGroup(Group); }}
 	void AddGroup(FUMJointGroup* Group)
 	{
 		Groups.Add(Group);
 	}
-	void AddJoints(TArray<FUMJoint>& JointsIn) { for (auto& Joint : JointsIn) { AddJoint(Joint); } }
-	void AddJoint(FUMJoint Joint)
+	void AddJoints(TArray<FUMJoint> JointsIn) { for (auto& Joint : JointsIn) { AddJoint(Joint); } }
+	void AddJoint(const FUMJoint& Joint)
 	{
 		Joints.Add(Joint);
 	}
+
+	FString ToString();
 
 private:
 	
@@ -121,17 +136,21 @@ class UUMSequenceHelper :  public UBlueprintFunctionLibrary
 	
 	UFUNCTION(BlueprintPure, Category = "Animation|Sequencer", meta=(BlueprintThreadSafe))
 	static FUMJointKey MakeKeyframe(float Time, const FTransform& Transform);
-
+	
 	UFUNCTION(BlueprintPure, Category = "Animation|Sequencer", meta=(BlueprintThreadSafe))
-	static FUMJoint MakeJoint(FName NameIn, const FRotatorRange& RangeLimitsIn, const FUMJointTimeline& SequenceIn);
+	static FUMJoint MakeJoint(FName NameIn, FName CtrlNameIm, const FRotatorRange& RangeLimitsIn, const FUMJointTimeline& SequenceIn);
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Sequencer", meta=(BlueprintThreadSafe))
 	static const FUMJointGroup& MakeJointGroup(FName Name, TArray<FUMJointGroup>& Groups,
 	                                           TArray<FUMJoint>& Joints);
 
+	UFUNCTION(BlueprintCallable, Category = "Animation|Joint|Group")
+	static const void PrintJointGroup(FUMJointGroup Group);
+	
 	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
 	static void AddGroups(FUMJointGroup& JointGroup, const TArray<FUMJointGroup>& GroupsIn)
 	{
+		JointGroup.Groups.Reserve(JointGroup.Groups.Num() + GroupsIn.Num());
 		for (auto& Group : GroupsIn) { AddGroup(JointGroup, Group); }
 	}
 	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
@@ -139,15 +158,15 @@ class UUMSequenceHelper :  public UBlueprintFunctionLibrary
 	{
 		// No reserve tricks because they screw up amortized constant time
 		JointGroup.Groups.Add(&Group);
-		//Groups.Last().Parent = Me;
 	}
 	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
 	static void AddJoints(FUMJointGroup& JointGroup, TArray<FUMJoint>& JointsIn)
 	{
+		JointGroup.Joints.Reserve(JointGroup.Groups.Num() + JointsIn.Num());
 		for (auto& Joint : JointsIn) { AddJoint(JointGroup, Joint); }
 	}
 	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
-	static void AddJoint(FUMJointGroup& JointGroup, FUMJoint& Joint)
+	static void AddJoint(FUMJointGroup& JointGroup, const FUMJoint& Joint)
 	{
 		JointGroup.Joints.Add(Joint);
 	}
