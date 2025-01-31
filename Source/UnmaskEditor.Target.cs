@@ -10,6 +10,8 @@ public class UnmaskEditorTarget : TargetRules
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V5;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_4;
-		ExtraModuleNames.Add("Unmask");
+		ExtraModuleNames.AddRange(new string[] {
+			"Unmask", "EditorModule"
+		});
 	}
 }

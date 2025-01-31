@@ -8,9 +8,21 @@
 			"Name": "Unmask",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "EditorModule",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [
+		{
+			"Name": "GitSourceControl",
+			"Enabled": true,
+			"TargetAllowList": [
+				"Editor"
+			]
+		},
 		{
 			"Name": "ModelingToolsEditorMode",
 			"Enabled": true,
