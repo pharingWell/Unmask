@@ -77,6 +77,7 @@ USTRUCT(Blueprintable, BlueprintType)
 struct FUMJoint
 {
 	GENERATED_BODY()
+public:
 	FUMJoint() : Name("*") {};
 	FUMJoint(FName InName) : Name(InName) {};
 	FUMJoint(FName InName, FName InCtrl, FRotatorRange InRangeLimits, FUMJointTimeline InTimeline) :
@@ -98,31 +99,33 @@ public:
 // A container for multiple Joints, which can also hold other JointGroups
 // Also holds a flattened list of all the Timelines represented within
 // Note: underlying Timeline maps being edited does not propagate upward yet
-USTRUCT(Blueprintable, BlueprintType)
-struct FUMJointGroup
+UCLASS(Blueprintable, BlueprintType)
+class UUMJointGroup : public UObject
 {
 	GENERATED_BODY()
 	
 public:
 	UPROPERTY(Blueprintable, BlueprintReadWrite)
 	FName Name;
-	TArray<FUMJointGroup*> Groups;
+	UPROPERTY(Blueprintable, BlueprintReadWrite)
+	UUMJointGroup* Parent {nullptr};
+	UPROPERTY(Blueprintable, BlueprintReadWrite)
+	TArray<UUMJointGroup*> Groups;
 	TArray<FUMJoint> Joints;
+	TSet<FName> Bones;
 public:
-	FUMJointGroup() : Name("*") {}
-	FUMJointGroup(FName InName) : Name(InName) {}
-	void AddGroups(TArray<FUMJointGroup*>& GroupsIn) { for (const auto& Group : GroupsIn) { AddGroup(Group); }}
-	void AddGroup(FUMJointGroup* Group)
-	{
-		Groups.Add(Group);
-	}
+	UUMJointGroup() : Name("*") {}
+	UUMJointGroup(FName InName) : Name(InName) {}
+	
+	void AddGroups(TArray<UUMJointGroup*>& GroupsIn) { for (const auto& Group : GroupsIn) { AddGroup(Group); }}
+	void AddGroup(UUMJointGroup* Group) { Groups.Add(Group); Group->Parent = this;}
 	void AddJoints(TArray<FUMJoint> JointsIn) { for (auto& Joint : JointsIn) { AddJoint(Joint); } }
-	void AddJoint(const FUMJoint& Joint)
-	{
-		Joints.Add(Joint);
-	}
-
+	void AddJoint(const FUMJoint& Joint) { Joints.Add(Joint); }
+	void AddBones(TArray<FName> InBones) { for (auto& Bone : InBones) { AddBone(Bone); }}
+	void AddBone(FName InBone) { Bones.Add(InBone); }
+	
 	FString ToString();
+	bool ContainsBone(FName BoneName, bool bIncludeChildren);
 
 private:
 	
@@ -136,40 +139,34 @@ class UUMSequenceHelper :  public UBlueprintFunctionLibrary
 	
 	UFUNCTION(BlueprintPure, Category = "Animation|Sequencer", meta=(BlueprintThreadSafe))
 	static FUMJointKey MakeKeyframe(float Time, const FTransform& Transform);
-	
-	UFUNCTION(BlueprintPure, Category = "Animation|Sequencer", meta=(BlueprintThreadSafe))
-	static FUMJoint MakeJoint(FName NameIn, FName CtrlNameIm, const FRotatorRange& RangeLimitsIn, const FUMJointTimeline& SequenceIn);
-
-	UFUNCTION(BlueprintPure, Category = "Animation|Sequencer", meta=(BlueprintThreadSafe))
-	static const FUMJointGroup& MakeJointGroup(FName Name, TArray<FUMJointGroup>& Groups,
-	                                           TArray<FUMJoint>& Joints);
 
 	UFUNCTION(BlueprintCallable, Category = "Animation|Joint|Group")
-	static const void PrintJointGroup(FUMJointGroup Group);
+	static const void PrintJointGroup(UUMJointGroup *Group);
 	
-	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
-	static void AddGroups(FUMJointGroup& JointGroup, const TArray<FUMJointGroup>& GroupsIn)
+	UFUNCTION(Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
+	static void AddGroups(UUMJointGroup *JointGroup, const TArray<UUMJointGroup*> GroupsIn)
 	{
-		JointGroup.Groups.Reserve(JointGroup.Groups.Num() + GroupsIn.Num());
+		JointGroup->Groups.Reserve(JointGroup->Groups.Num() + GroupsIn.Num());
 		for (auto& Group : GroupsIn) { AddGroup(JointGroup, Group); }
 	}
-	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
-	static void AddGroup(FUMJointGroup& JointGroup, FUMJointGroup Group)
+	UFUNCTION(Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
+	static void AddGroup(UUMJointGroup *JointGroup, UUMJointGroup *Group)
 	{
 		// No reserve tricks because they screw up amortized constant time
-		JointGroup.Groups.Add(&Group);
+		JointGroup->Groups.Add(Group);
+		Group->Parent = JointGroup;
 	}
-	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
-	static void AddJoints(FUMJointGroup& JointGroup, TArray<FUMJoint>& JointsIn)
+	UFUNCTION(Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
+	static void AddJoints(UUMJointGroup *JointGroup, TArray<FUMJoint>& JointsIn)
 	{
-		JointGroup.Joints.Reserve(JointGroup.Groups.Num() + JointsIn.Num());
+		JointGroup->Joints.Reserve(JointGroup->Groups.Num() + JointsIn.Num());
 		for (auto& Joint : JointsIn) { AddJoint(JointGroup, Joint); }
 	}
-	UFUNCTION(BlueprintPure, Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
-	static void AddJoint(FUMJointGroup& JointGroup, const FUMJoint& Joint)
+	UFUNCTION(Category = "Animation|Joint|Group", meta=(BlueprintThreadSafe))
+	static void AddJoint(UUMJointGroup *JointGroup, const FUMJoint& Joint)
 	{
-		JointGroup.Joints.Add(Joint);
+		JointGroup->Joints.Add(Joint);
 	}
 	UFUNCTION(BlueprintPure, Category = "Animation", meta=(BlueprintThreadSafe))
-	static UAnimSequence* BuildSequence(FUMJointGroup JointGroup, USkeletalMesh* SkeletalMesh);
+	static UAnimSequence* BuildSequence(UUMJointGroup *JointGroup, USkeletalMesh* SkeletalMesh);
 };

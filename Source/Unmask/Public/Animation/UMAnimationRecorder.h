@@ -6,17 +6,32 @@
 #include "CoreMinimal.h"
 #include "Animation/AnimData/UMSequenceStructs.h"
 #include "Components/PoseableMeshComponent.h"
+#include "Templates/Tuple.h"
 #include "UObject/Object.h"
 #include "UMAnimationRecorder.generated.h"
 
 /**
  * 
  */
+
+template<typename... Types>  struct TTuple;
+
 USTRUCT()
-struct FParentChildPair
+struct FUMParentChildPair
 {
 	GENERATED_BODY()
 	int32 ParentIndex, ChildIndex;
+};
+
+UENUM()
+enum EUMAnimEditor_MatSlot
+{
+	LEG_L = 0,
+	ARM_L,
+	LEG_R,
+	ARM_R,
+	HEAD,
+	TORSO
 };
 
 UCLASS(BlueprintType)
@@ -24,29 +39,32 @@ class UNMASK_API UUMAnimationRecorder : public UObject
 {
 	GENERATED_BODY()
 protected:
+	UPROPERTY()
 	USkeletalMeshComponent* SkeletalMeshComponent;
-	FUMJointGroup RootGroup;
-	TMap<FName, FUMJointGroup> AllGroups;
+	UPROPERTY()
+	UUMJointGroup* RootGroup;
+	UPROPERTY()
+	TMap<FName, UUMJointGroup*> AllGroups;
+	UPROPERTY()
+	TArray<UMaterialInstanceDynamic*> DynMatInsts;
 
 public:
-	UUMAnimationRecorder(): RootGroup("Root") { this->SkeletalMeshComponent = nullptr; }
+	UUMAnimationRecorder();
 	UFUNCTION(BlueprintCallable)
 	static UUMAnimationRecorder* GetNewAnimationRecorder();
 	UFUNCTION(BlueprintCallable)
 	void InitAnimationRecorder(USkeletalMeshComponent* InSkeletalMeshComponent);
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	UUMJointGroup* GetGroupWithBone(FName Bone);
 	UFUNCTION(BlueprintCallable)
-	FName GetGroupWithBone(FName Bone);
-	UFUNCTION(BlueprintCallable)
-	void HideAllButGroup(FName GroupName);
+	void SelectGroup(UUMJointGroup* Group);
 	FString AllGroupsToString();
 	UFUNCTION(BlueprintCallable)
 	void PrintAllGroups();
 	UFUNCTION(BlueprintCallable)
 	void LoadTimelines(TMap<FName, FUMJointTimeline> Timelines);
 	UFUNCTION(BluePrintCallable)
-	FUMJointGroup GetRootGroup() { return this->RootGroup; }
+	UUMJointGroup* GetRootGroup() { return this->RootGroup; }
 	UFUNCTION(BluePrintCallable)
-	TMap<FName, FUMJointGroup> GetGroups() { return this->AllGroups;}
-private:
-	bool IsInGroup(FName BoneName, FName GroupName, bool bIncludeChildren);
+	TMap<FName, UUMJointGroup*> GetGroups() { return this->AllGroups;}
 };
